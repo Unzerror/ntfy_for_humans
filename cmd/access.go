@@ -67,6 +67,14 @@ Examples:
 `,
 }
 
+// execUserAccess is the entry point for the `ntfy access` command.
+// It parses arguments and flags to determine whether to show, change, or reset access.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the command fails or if arguments are invalid.
 func execUserAccess(c *cli.Context) error {
 	if c.NArg() > 3 {
 		return errors.New("too many arguments, please check 'ntfy access --help' for usage details")
@@ -96,6 +104,17 @@ func execUserAccess(c *cli.Context) error {
 	return changeAccess(c, manager, username, topic, perms)
 }
 
+// changeAccess updates the access permissions for a user on a specific topic.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//   - username: The name of the user.
+//   - topic: The topic to change access for.
+//   - perms: The new permission string (e.g., "read-write", "read-only").
+//
+// Returns:
+//   - An error if the user or topic is invalid, or if the update fails.
 func changeAccess(c *cli.Context, manager *user.Manager, username string, topic string, perms string) error {
 	if !util.Contains([]string{"", "read-write", "rw", "read-only", "read", "ro", "write-only", "write", "wo", "none", "deny"}, perms) {
 		return errors.New("permission must be one of: read-write, read-only, write-only, or deny (or the aliases: read, ro, write, wo, none)")
@@ -127,6 +146,17 @@ func changeAccess(c *cli.Context, manager *user.Manager, username string, topic 
 	return showUserAccess(c, manager, username)
 }
 
+// resetAccess removes access permissions for a user, optionally for a specific topic.
+// If username is empty, it resets all access for all users.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//   - username: The name of the user (or empty for all users).
+//   - topic: The topic to reset access for (or empty for all topics).
+//
+// Returns:
+//   - An error if the reset operation fails.
 func resetAccess(c *cli.Context, manager *user.Manager, username, topic string) error {
 	if username == "" {
 		return resetAllAccess(c, manager)
@@ -136,6 +166,14 @@ func resetAccess(c *cli.Context, manager *user.Manager, username, topic string) 
 	return resetUserTopicAccess(c, manager, username, topic)
 }
 
+// resetAllAccess removes all access permissions for all users.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//
+// Returns:
+//   - An error if the reset operation fails.
 func resetAllAccess(c *cli.Context, manager *user.Manager) error {
 	if err := manager.ResetAccess("", ""); err != nil {
 		return err
@@ -144,6 +182,15 @@ func resetAllAccess(c *cli.Context, manager *user.Manager) error {
 	return nil
 }
 
+// resetUserAccess removes all access permissions for a specific user.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//   - username: The name of the user.
+//
+// Returns:
+//   - An error if the reset operation fails.
 func resetUserAccess(c *cli.Context, manager *user.Manager, username string) error {
 	if err := manager.ResetAccess(username, ""); err != nil {
 		return err
@@ -152,6 +199,16 @@ func resetUserAccess(c *cli.Context, manager *user.Manager, username string) err
 	return showUserAccess(c, manager, username)
 }
 
+// resetUserTopicAccess removes access permissions for a specific user and topic.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//   - username: The name of the user.
+//   - topic: The topic to reset access for.
+//
+// Returns:
+//   - An error if the reset operation fails.
 func resetUserTopicAccess(c *cli.Context, manager *user.Manager, username string, topic string) error {
 	if err := manager.ResetAccess(username, topic); err != nil {
 		return err
@@ -160,6 +217,17 @@ func resetUserTopicAccess(c *cli.Context, manager *user.Manager, username string
 	return showUserAccess(c, manager, username)
 }
 
+// showAccess displays access permissions.
+// If username is provided, it shows permissions for that user.
+// Otherwise, it shows permissions for all users.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//   - username: The name of the user (optional).
+//
+// Returns:
+//   - An error if retrieving the access information fails.
 func showAccess(c *cli.Context, manager *user.Manager, username string) error {
 	if username == "" {
 		return showAllAccess(c, manager)
@@ -167,6 +235,14 @@ func showAccess(c *cli.Context, manager *user.Manager, username string) error {
 	return showUserAccess(c, manager, username)
 }
 
+// showAllAccess displays access permissions for all users.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//
+// Returns:
+//   - An error if retrieving the users or their permissions fails.
 func showAllAccess(c *cli.Context, manager *user.Manager) error {
 	users, err := manager.Users()
 	if err != nil {
@@ -175,6 +251,15 @@ func showAllAccess(c *cli.Context, manager *user.Manager) error {
 	return showUsers(c, manager, users)
 }
 
+// showUserAccess displays access permissions for a specific user.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//   - username: The name of the user.
+//
+// Returns:
+//   - An error if the user is not found or retrieving permissions fails.
 func showUserAccess(c *cli.Context, manager *user.Manager, username string) error {
 	users, err := manager.User(username)
 	if errors.Is(err, user.ErrUserNotFound) {
@@ -185,6 +270,15 @@ func showUserAccess(c *cli.Context, manager *user.Manager, username string) erro
 	return showUsers(c, manager, []*user.User{users})
 }
 
+// showUsers iterates through a list of users and prints their access permissions.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - manager: The user manager instance.
+//   - users: A list of User objects.
+//
+// Returns:
+//   - An error if retrieving grants for a user fails.
 func showUsers(c *cli.Context, manager *user.Manager, users []*user.User) error {
 	for _, u := range users {
 		grants, err := manager.Grants(u.Name)

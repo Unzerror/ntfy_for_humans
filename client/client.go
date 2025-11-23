@@ -1,4 +1,4 @@
-// Package client provides a ntfy client to publish and subscribe to topics
+// Package client provides a ntfy client to publish and subscribe to topics.
 package client
 
 import (
@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	// MessageEvent identifies a message event
+	// MessageEvent identifies a message event in the JSON stream.
 	MessageEvent = "message"
 )
 
@@ -30,42 +30,64 @@ var (
 	topicRegex = regexp.MustCompile(`^[-_A-Za-z0-9]{1,64}$`) // Same as in server/server.go
 )
 
-// Client is the ntfy client that can be used to publish and subscribe to ntfy topics
+// Client is the ntfy client that can be used to publish and subscribe to ntfy topics.
 type Client struct {
+	// Messages is a channel that receives new messages for subscribed topics.
 	Messages      chan *Message
 	config        *Config
 	subscriptions map[string]*subscription
 	mu            sync.Mutex
 }
 
-// Message is a struct that represents a ntfy message
+// Message represents a ntfy message.
 type Message struct { // TODO combine with server.message
+	// ID is the unique identifier of the message.
 	ID         string
+	// Event is the type of event (e.g., "message", "open", "keepalive").
 	Event      string
+	// Time is the timestamp of the message.
 	Time       int64
+	// Topic is the topic name.
 	Topic      string
+	// Message is the message body.
 	Message    string
+	// Title is the title of the message.
 	Title      string
+	// Priority is the priority of the message (1-5).
 	Priority   int
+	// Tags is a list of tags associated with the message.
 	Tags       []string
+	// Click is a URL to open when the notification is clicked.
 	Click      string
+	// Icon is a URL to an icon to display with the notification.
 	Icon       string
+	// Attachment contains information about an attachment, if present.
 	Attachment *Attachment
 
 	// Additional fields
+
+	// TopicURL is the full URL of the topic.
 	TopicURL       string
+	// SubscriptionID is the ID of the subscription that received this message.
 	SubscriptionID string
+	// Raw is the raw JSON representation of the message.
 	Raw            string
 }
 
-// Attachment represents a message attachment
+// Attachment represents a message attachment.
 type Attachment struct {
+	// Name is the name of the attachment.
 	Name    string `json:"name"`
+	// Type is the MIME type of the attachment.
 	Type    string `json:"type,omitempty"`
+	// Size is the size of the attachment in bytes.
 	Size    int64  `json:"size,omitempty"`
+	// Expires is the timestamp when the attachment expires.
 	Expires int64  `json:"expires,omitempty"`
+	// URL is the URL to download the attachment.
 	URL     string `json:"url"`
-	Owner   string `json:"-"` // IP address of uploader, used for rate limiting
+	// Owner is the IP address of uploader, used for rate limiting.
+	Owner   string `json:"-"`
 }
 
 type subscription struct {
@@ -74,7 +96,13 @@ type subscription struct {
 	cancel   context.CancelFunc
 }
 
-// New creates a new Client using a given Config
+// New creates a new Client using a given Config.
+//
+// Parameters:
+//   - config: The configuration object for the client.
+//
+// Returns:
+//   - A new Client instance.
 func New(config *Config) *Client {
 	return &Client{
 		Messages:      make(chan *Message, 50), // Allow reading a few messages
@@ -85,11 +113,19 @@ func New(config *Config) *Client {
 
 // Publish sends a message to a specific topic, optionally using options.
 // See PublishReader for details.
+//
+// Parameters:
+//   - topic: The topic to publish to.
+//   - message: The message content.
+//   - options: Optional configuration for the publish request (e.g., title, priority).
+//
+// Returns:
+//   - The published Message object, or an error if the request failed.
 func (c *Client) Publish(topic, message string, options ...PublishOption) (*Message, error) {
 	return c.PublishReader(topic, strings.NewReader(message), options...)
 }
 
-// PublishReader sends a message to a specific topic, optionally using options.
+// PublishReader sends a message to a specific topic using an io.Reader as the body, optionally using options.
 //
 // A topic can be either a full URL (e.g. https://myhost.lan/mytopic), a short URL which is then prepended https://
 // (e.g. myhost.lan -> https://myhost.lan), or a short name which is expanded using the default host in the
@@ -97,6 +133,14 @@ func (c *Client) Publish(topic, message string, options ...PublishOption) (*Mess
 //
 // To pass title, priority and tags, check out WithTitle, WithPriority, WithTagsList, WithDelay, WithNoCache,
 // WithNoFirebase, and the generic WithHeader.
+//
+// Parameters:
+//   - topic: The topic to publish to.
+//   - body: The message body as an io.Reader.
+//   - options: Optional configuration for the publish request.
+//
+// Returns:
+//   - The published Message object, or an error if the request failed.
 func (c *Client) PublishReader(topic string, body io.Reader, options ...PublishOption) (*Message, error) {
 	topicURL, err := c.expandTopicURL(topic)
 	if err != nil {
@@ -140,6 +184,13 @@ func (c *Client) PublishReader(topic string, body io.Reader, options ...PublishO
 //
 // By default, all messages will be returned, but you can change this behavior using a SubscribeOption.
 // See WithSince, WithSinceAll, WithSinceUnixTime, WithScheduled, and the generic WithQueryParam.
+//
+// Parameters:
+//   - topic: The topic to poll.
+//   - options: Optional configuration for the poll request.
+//
+// Returns:
+//   - A list of messages, or an error if the request failed.
 func (c *Client) Poll(topic string, options ...SubscribeOption) ([]*Message, error) {
 	topicURL, err := c.expandTopicURL(topic)
 	if err != nil {
@@ -174,6 +225,13 @@ func (c *Client) Poll(topic string, options ...SubscribeOption) ([]*Message, err
 //
 // The method returns a unique subscriptionID that can be used in Unsubscribe.
 //
+// Parameters:
+//   - topic: The topic to subscribe to.
+//   - options: Optional configuration for the subscription.
+//
+// Returns:
+//   - A subscription ID, or an error if the subscription failed.
+//
 // Example:
 //
 //	c := client.New(client.NewConfig())
@@ -202,6 +260,9 @@ func (c *Client) Subscribe(topic string, options ...SubscribeOption) (string, er
 
 // Unsubscribe unsubscribes from a topic that has been previously subscribed to using the unique
 // subscriptionID returned in Subscribe.
+//
+// Parameters:
+//   - subscriptionID: The ID of the subscription to cancel.
 func (c *Client) Unsubscribe(subscriptionID string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

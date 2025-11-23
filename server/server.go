@@ -1,3 +1,4 @@
+// Package server contains the main server logic for ntfy.
 package server
 
 import (
@@ -39,7 +40,7 @@ import (
 	"heckel.io/ntfy/v2/util/sprig"
 )
 
-// Server is the main server, providing the UI and API for ntfy
+// Server is the main server, providing the UI and API for ntfy.
 type Server struct {
 	config            *Config
 	httpServer        *http.Server
@@ -66,7 +67,7 @@ type Server struct {
 	mu                sync.RWMutex
 }
 
-// handleFunc extends the normal http.HandlerFunc to be able to easily return errors
+// handleFunc extends the normal http.HandlerFunc to be able to easily return errors.
 type handleFunc func(http.ResponseWriter, *http.Request, *visitor) error
 
 var (
@@ -160,6 +161,12 @@ const (
 
 // New instantiates a new Server. It creates the cache and adds a Firebase
 // subscriber (if configured).
+//
+// Parameters:
+//   - conf: The configuration for the server.
+//
+// Returns:
+//   - A new Server instance, or an error if initialization fails.
 func New(conf *Config) (*Server, error) {
 	var mailer mailer
 	if conf.SMTPSenderAddr != "" {
@@ -256,6 +263,9 @@ func createMessageCache(conf *Config) (*messageCache, error) {
 
 // Run executes the main server. It listens on HTTP (+ HTTPS, if configured), and starts
 // a manager go routine to print stats and prune messages.
+//
+// Returns:
+//   - An error if the server fails to start or crashes.
 func (s *Server) Run() error {
 	var listenStr string
 	if s.config.ListenHTTP != "" {
@@ -358,7 +368,7 @@ func (s *Server) Run() error {
 	return <-errChan
 }
 
-// Stop stops HTTP (+HTTPS) server and all managers
+// Stop stops HTTP (+HTTPS) server and all managers.
 func (s *Server) Stop() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -388,7 +398,8 @@ func (s *Server) closeDatabases() {
 	}
 }
 
-// handle is the main entry point for all HTTP requests
+// handle is the main entry point for all HTTP requests.
+// It handles authentication, logging, and dispatching to specific handlers.
 func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	v, err := s.maybeAuthenticate(r) // Note: Always returns v, even when error is returned
 	if err != nil {

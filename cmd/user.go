@@ -189,6 +189,13 @@ variable to pass the new password. This is useful if you are creating/updating u
 `,
 }
 
+// execUserAdd adds a new user to the database.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if user creation fails.
 func execUserAdd(c *cli.Context) error {
 	username := c.Args().Get(0)
 	role := user.Role(c.String("role"))
@@ -230,6 +237,13 @@ func execUserAdd(c *cli.Context) error {
 	return nil
 }
 
+// execUserDel removes a user from the database.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the user does not exist or deletion fails.
 func execUserDel(c *cli.Context) error {
 	username := c.Args().Get(0)
 	if username == "" {
@@ -251,6 +265,13 @@ func execUserDel(c *cli.Context) error {
 	return nil
 }
 
+// execUserChangePass updates a user's password.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the user does not exist or password update fails.
 func execUserChangePass(c *cli.Context) error {
 	username := c.Args().Get(0)
 	password, hashed := os.LookupEnv("NTFY_PASSWORD_HASH")
@@ -283,6 +304,13 @@ func execUserChangePass(c *cli.Context) error {
 	return nil
 }
 
+// execUserChangeRole updates a user's role.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the user does not exist or role update fails.
 func execUserChangeRole(c *cli.Context) error {
 	username := c.Args().Get(0)
 	role := user.Role(c.Args().Get(1))
@@ -305,6 +333,13 @@ func execUserChangeRole(c *cli.Context) error {
 	return nil
 }
 
+// execUserHash generates a bcrypt hash for a password.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - nil.
 func execUserHash(c *cli.Context) error {
 	password, err := readPasswordAndConfirm(c)
 	if err != nil {
@@ -318,6 +353,13 @@ func execUserHash(c *cli.Context) error {
 	return nil
 }
 
+// execUserChangeTier updates a user's tier.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the user does not exist or tier update fails.
 func execUserChangeTier(c *cli.Context) error {
 	username := c.Args().Get(0)
 	tier := c.Args().Get(1)
@@ -349,6 +391,13 @@ func execUserChangeTier(c *cli.Context) error {
 	return nil
 }
 
+// execUserList lists all users.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if listing users fails.
 func execUserList(c *cli.Context) error {
 	manager, err := createUserManager(c)
 	if err != nil {
@@ -361,6 +410,13 @@ func execUserList(c *cli.Context) error {
 	return showUsers(c, manager, users)
 }
 
+// createUserManager initializes the user manager based on the CLI configuration.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - A new User Manager or an error.
 func createUserManager(c *cli.Context) (*user.Manager, error) {
 	authFile := c.String("auth-file")
 	authStartupQueries := c.String("auth-startup-queries")
@@ -385,6 +441,13 @@ func createUserManager(c *cli.Context) (*user.Manager, error) {
 	return user.NewManager(authConfig)
 }
 
+// readPasswordAndConfirm reads a password from stdin and asks for confirmation.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - The password string or an error.
 func readPasswordAndConfirm(c *cli.Context) (string, error) {
 	fmt.Fprint(c.App.ErrWriter, "password: ")
 	password, err := util.ReadPassword(c.App.Reader)

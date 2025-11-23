@@ -128,6 +128,14 @@ Examples:
   ntfy serve --listen-http :8080  # Starts server with alternate port`,
 }
 
+// execServe is the entry point for the `ntfy serve` command.
+// It loads the configuration, parses flags, validates settings, and starts the server.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if configuration is invalid or the server fails to start.
 func execServe(c *cli.Context) error {
 	if c.NArg() > 0 {
 		return errors.New("no arguments expected, see 'ntfy serve --help' for help")
@@ -507,6 +515,10 @@ func execServe(c *cli.Context) error {
 	return nil
 }
 
+// sigHandlerConfigReload watches for SIGHUP signals and reloads the configuration when received.
+//
+// Parameters:
+//   - config: The path to the configuration file.
 func sigHandlerConfigReload(config string) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGHUP)
@@ -523,6 +535,15 @@ func sigHandlerConfigReload(config string) {
 	}
 }
 
+// parseIPHostPrefix resolves a host string to a list of IP prefixes.
+// It handles CIDR notation as well as hostnames.
+//
+// Parameters:
+//   - host: The host string (IP, CIDR, or hostname).
+//
+// Returns:
+//   - prefixes: A slice of resolved IP prefixes.
+//   - err: An error if resolution fails.
 func parseIPHostPrefix(host string) (prefixes []netip.Prefix, err error) {
 	// Try parsing as prefix, e.g. 10.0.1.0/24 or 2001:db8::/32
 	prefix, err := netip.ParsePrefix(host)
@@ -548,6 +569,14 @@ func parseIPHostPrefix(host string) (prefixes []netip.Prefix, err error) {
 	return
 }
 
+// parseUsers parses a list of user strings in the format "name:hash:role".
+//
+// Parameters:
+//   - usersRaw: A slice of user strings.
+//
+// Returns:
+//   - users: A slice of User objects.
+//   - err: An error if parsing fails.
 func parseUsers(usersRaw []string) ([]*user.User, error) {
 	users := make([]*user.User, 0)
 	for _, userLine := range usersRaw {
@@ -575,6 +604,15 @@ func parseUsers(usersRaw []string) ([]*user.User, error) {
 	return users, nil
 }
 
+// parseAccess parses a list of access control strings in the format "user:topic:permission".
+//
+// Parameters:
+//   - users: A list of valid users.
+//   - accessRaw: A slice of access control strings.
+//
+// Returns:
+//   - access: A map of username to a list of Grants.
+//   - err: An error if parsing fails.
 func parseAccess(users []*user.User, accessRaw []string) (map[string][]*user.Grant, error) {
 	access := make(map[string][]*user.Grant)
 	for _, accessLine := range accessRaw {
@@ -618,6 +656,15 @@ func parseAccess(users []*user.User, accessRaw []string) (map[string][]*user.Gra
 	return access, nil
 }
 
+// parseTokens parses a list of token strings in the format "user:token[:label]".
+//
+// Parameters:
+//   - users: A list of valid users.
+//   - tokensRaw: A slice of token strings.
+//
+// Returns:
+//   - tokens: A map of username to a list of Tokens.
+//   - err: An error if parsing fails.
 func parseTokens(users []*user.User, tokensRaw []string) (map[string][]*user.Token, error) {
 	tokens := make(map[string][]*user.Token)
 	for _, tokenLine := range tokensRaw {
@@ -654,6 +701,13 @@ func parseTokens(users []*user.User, tokensRaw []string) (map[string][]*user.Tok
 	return tokens, nil
 }
 
+// reloadLogLevel updates the log level based on the configuration source.
+//
+// Parameters:
+//   - inputSource: The source of configuration values.
+//
+// Returns:
+//   - An error if loading the log level fails.
 func reloadLogLevel(inputSource altsrc.InputSourceContext) error {
 	newLevelStr, err := inputSource.String("log-level")
 	if err != nil {

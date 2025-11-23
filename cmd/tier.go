@@ -165,6 +165,13 @@ Examples:
 `,
 }
 
+// execTierAdd adds a new tier to the system.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if adding the tier fails (e.g., tier already exists).
 func execTierAdd(c *cli.Context) error {
 	code := c.Args().Get(0)
 	if code == "" {
@@ -239,6 +246,13 @@ func execTierAdd(c *cli.Context) error {
 	return nil
 }
 
+// execTierChange modifies an existing tier.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the tier is not found or updating fails.
 func execTierChange(c *cli.Context) error {
 	code := c.Args().Get(0)
 	if code == "" {
@@ -320,6 +334,13 @@ func execTierChange(c *cli.Context) error {
 	return nil
 }
 
+// execTierDel removes a tier from the system.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the tier is not found or deletion fails.
 func execTierDel(c *cli.Context) error {
 	code := c.Args().Get(0)
 	if code == "" {
@@ -339,6 +360,13 @@ func execTierDel(c *cli.Context) error {
 	return nil
 }
 
+// execTierList lists all tiers.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if listing tiers fails.
 func execTierList(c *cli.Context) error {
 	manager, err := createUserManager(c)
 	if err != nil {
@@ -354,6 +382,11 @@ func execTierList(c *cli.Context) error {
 	return nil
 }
 
+// printTier prints the details of a tier to stdout.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - tier: The tier to print.
 func printTier(c *cli.Context, tier *user.Tier) {
 	prices := "(none)"
 	if tier.StripeMonthlyPriceID != "" && tier.StripeYearlyPriceID != "" {

@@ -11,6 +11,14 @@ import (
 
 // initConfigFileInputSourceFunc is like altsrc.InitInputSourceWithContext and altsrc.NewYamlSourceFromFlagFunc, but checks
 // if the config flag is exists and only loads it if it does. If the flag is set and the file exists, it fails.
+//
+// Parameters:
+//   - configFlag: The name of the flag that contains the config file path.
+//   - flags: A slice of flags to populate from the config file.
+//   - next: A function to call after configuration is loaded.
+//
+// Returns:
+//   - A cli.BeforeFunc that loads configuration and calls the next function.
 func initConfigFileInputSourceFunc(configFlag string, flags []cli.Flag, next cli.BeforeFunc) cli.BeforeFunc {
 	return func(context *cli.Context) error {
 		configFile := context.String(configFlag)
@@ -39,6 +47,13 @@ func initConfigFileInputSourceFunc(configFlag string, flags []cli.Flag, next cli
 //
 // This function also maps aliases, so a .yml file can contain short options, or options with underscores
 // instead of dashes. See https://github.com/binwiederhier/ntfy/issues/255.
+//
+// Parameters:
+//   - file: The path to the YAML configuration file.
+//   - flags: A slice of flags to check for aliases.
+//
+// Returns:
+//   - An InputSourceContext containing the loaded configuration, or an error if loading fails.
 func newYamlSourceFromFile(file string, flags []cli.Flag) (altsrc.InputSourceContext, error) {
 	var rawConfig map[any]any
 	b, err := os.ReadFile(file)

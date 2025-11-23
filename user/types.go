@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// User is a struct that represents a user
+// User is a struct that represents a user.
 type User struct {
 	ID          string
 	Name        string
@@ -27,6 +27,9 @@ type User struct {
 
 // TierID returns the ID of the User.Tier, or an empty string if the user has no tier,
 // or if the user itself is nil.
+//
+// Returns:
+//   - The Tier ID or empty string.
 func (u *User) TierID() string {
 	if u == nil || u.Tier == nil {
 		return ""
@@ -34,17 +37,23 @@ func (u *User) TierID() string {
 	return u.Tier.ID
 }
 
-// IsAdmin returns true if the user is an admin
+// IsAdmin returns true if the user is an admin.
+//
+// Returns:
+//   - True if the user is an admin, false otherwise.
 func (u *User) IsAdmin() bool {
 	return u != nil && u.Role == RoleAdmin
 }
 
-// IsUser returns true if the user is a regular user, not an admin
+// IsUser returns true if the user is a regular user, not an admin.
+//
+// Returns:
+//   - True if the user is a regular user, false otherwise.
 func (u *User) IsUser() bool {
 	return u != nil && u.Role == RoleUser
 }
 
-// Auther is an interface for authentication and authorization
+// Auther is an interface for authentication and authorization.
 type Auther interface {
 	// Authenticate checks username and password and returns a user if correct. The method
 	// returns in constant-ish time, regardless of whether the user exists or the password is
@@ -56,7 +65,7 @@ type Auther interface {
 	Authorize(user *User, topic string, perm Permission) error
 }
 
-// Token represents a user token, including expiry date
+// Token represents a user token, including expiry date.
 type Token struct {
 	Value       string
 	Label       string
@@ -66,20 +75,20 @@ type Token struct {
 	Provisioned bool
 }
 
-// TokenUpdate holds information about the last access time and origin IP address of a token
+// TokenUpdate holds information about the last access time and origin IP address of a token.
 type TokenUpdate struct {
 	LastAccess time.Time
 	LastOrigin netip.Addr
 }
 
-// Prefs represents a user's configuration settings
+// Prefs represents a user's configuration settings.
 type Prefs struct {
 	Language      *string            `json:"language,omitempty"`
 	Notification  *NotificationPrefs `json:"notification,omitempty"`
 	Subscriptions []*Subscription    `json:"subscriptions,omitempty"`
 }
 
-// Tier represents a user's account type, including its account limits
+// Tier represents a user's account type, including its account limits.
 type Tier struct {
 	ID                       string        // Tier identifier (ti_...)
 	Code                     string        // Code of the tier
@@ -97,7 +106,10 @@ type Tier struct {
 	StripeYearlyPriceID      string        // Yearly price ID for paid tiers (price_...)
 }
 
-// Context returns fields for the log
+// Context returns fields for the log.
+//
+// Returns:
+//   - A map of log fields.
 func (t *Tier) Context() log.Context {
 	return log.Context{
 		"tier_id":                 t.ID,
@@ -107,14 +119,17 @@ func (t *Tier) Context() log.Context {
 	}
 }
 
-// Subscription represents a user's topic subscription
+// Subscription represents a user's topic subscription.
 type Subscription struct {
 	BaseURL     string  `json:"base_url"`
 	Topic       string  `json:"topic"`
 	DisplayName *string `json:"display_name"`
 }
 
-// Context returns fields for the log
+// Context returns fields for the log.
+//
+// Returns:
+//   - A map of log fields.
 func (s *Subscription) Context() log.Context {
 	return log.Context{
 		"base_url": s.BaseURL,
@@ -122,21 +137,21 @@ func (s *Subscription) Context() log.Context {
 	}
 }
 
-// NotificationPrefs represents the user's notification settings
+// NotificationPrefs represents the user's notification settings.
 type NotificationPrefs struct {
 	Sound       *string `json:"sound,omitempty"`
 	MinPriority *int    `json:"min_priority,omitempty"`
 	DeleteAfter *int    `json:"delete_after,omitempty"`
 }
 
-// Stats is a struct holding daily user statistics
+// Stats is a struct holding daily user statistics.
 type Stats struct {
 	Messages int64
 	Emails   int64
 	Calls    int64
 }
 
-// Billing is a struct holding a user's billing information
+// Billing is a struct holding a user's billing information.
 type Billing struct {
 	StripeCustomerID            string
 	StripeSubscriptionID        string
@@ -146,24 +161,24 @@ type Billing struct {
 	StripeSubscriptionCancelAt  time.Time
 }
 
-// Grant is a struct that represents an access control entry to a topic by a user
+// Grant is a struct that represents an access control entry to a topic by a user.
 type Grant struct {
 	TopicPattern string // May include wildcard (*)
 	Permission   Permission
 	Provisioned  bool // Whether the grant was provisioned by the config file
 }
 
-// Reservation is a struct that represents the ownership over a topic by a user
+// Reservation is a struct that represents the ownership over a topic by a user.
 type Reservation struct {
 	Topic    string
 	Owner    Permission
 	Everyone Permission
 }
 
-// Permission represents a read or write permission to a topic
+// Permission represents a read or write permission to a topic.
 type Permission uint8
 
-// Permissions to a topic
+// Permissions to a topic.
 const (
 	PermissionDenyAll Permission = iota
 	PermissionRead
@@ -171,7 +186,14 @@ const (
 	PermissionReadWrite // 3!
 )
 
-// NewPermission is a helper to create a Permission based on read/write bool values
+// NewPermission is a helper to create a Permission based on read/write bool values.
+//
+// Parameters:
+//   - read: Whether to grant read permission.
+//   - write: Whether to grant write permission.
+//
+// Returns:
+//   - A Permission value.
 func NewPermission(read, write bool) Permission {
 	p := uint8(0)
 	if read {
@@ -183,7 +205,13 @@ func NewPermission(read, write bool) Permission {
 	return Permission(p)
 }
 
-// ParsePermission parses the string representation and returns a Permission
+// ParsePermission parses the string representation and returns a Permission.
+//
+// Parameters:
+//   - s: The permission string (e.g. "read-write", "rw").
+//
+// Returns:
+//   - The Permission value or an error if invalid.
 func ParsePermission(s string) (Permission, error) {
 	switch strings.ToLower(s) {
 	case "read-write", "rw":
@@ -199,22 +227,34 @@ func ParsePermission(s string) (Permission, error) {
 	}
 }
 
-// IsRead returns true if readable
+// IsRead returns true if readable.
+//
+// Returns:
+//   - True if the permission allows reading.
 func (p Permission) IsRead() bool {
 	return p&PermissionRead != 0
 }
 
-// IsWrite returns true if writable
+// IsWrite returns true if writable.
+//
+// Returns:
+//   - True if the permission allows writing.
 func (p Permission) IsWrite() bool {
 	return p&PermissionWrite != 0
 }
 
-// IsReadWrite returns true if readable and writable
+// IsReadWrite returns true if readable and writable.
+//
+// Returns:
+//   - True if the permission allows reading and writing.
 func (p Permission) IsReadWrite() bool {
 	return p.IsRead() && p.IsWrite()
 }
 
-// String returns a string representation of the permission
+// String returns a string representation of the permission.
+//
+// Returns:
+//   - The string representation (e.g. "read-write").
 func (p Permission) String() string {
 	if p.IsReadWrite() {
 		return "read-write"
@@ -226,23 +266,23 @@ func (p Permission) String() string {
 	return "deny-all"
 }
 
-// Role represents a user's role, either admin or regular user
+// Role represents a user's role, either admin or regular user.
 type Role string
 
-// User roles
+// User roles.
 const (
 	RoleAdmin     = Role("admin") // Some queries have these values hardcoded!
 	RoleUser      = Role("user")
 	RoleAnonymous = Role("anonymous")
 )
 
-// Everyone is a special username representing anonymous users
+// Everyone is a special username representing anonymous users.
 const (
 	Everyone   = "*"
 	everyoneID = "u_everyone"
 )
 
-// Error constants used by the package
+// Error constants used by the package.
 var (
 	ErrUnauthenticated        = errors.New("unauthenticated")
 	ErrUnauthorized           = errors.New("unauthorized")

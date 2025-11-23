@@ -8,38 +8,53 @@ import (
 	"time"
 )
 
-// RequestOption is a generic request option that can be added to Client calls
+// RequestOption is a generic request option that can be added to Client calls.
 type RequestOption = func(r *http.Request) error
 
-// PublishOption is an option that can be passed to the Client.Publish call
+// PublishOption is an option that can be passed to the Client.Publish call.
 type PublishOption = RequestOption
 
-// SubscribeOption is an option that can be passed to a Client.Subscribe or Client.Poll call
+// SubscribeOption is an option that can be passed to a Client.Subscribe or Client.Poll call.
 type SubscribeOption = RequestOption
 
 // WithMessage sets the notification message. This is an alternative way to passing the message body.
+//
+// Parameters:
+//   - message: The message content.
 func WithMessage(message string) PublishOption {
 	return WithHeader("X-Message", message)
 }
 
-// WithTitle adds a title to a message
+// WithTitle adds a title to a message.
+//
+// Parameters:
+//   - title: The title of the notification.
 func WithTitle(title string) PublishOption {
 	return WithHeader("X-Title", title)
 }
 
 // WithPriority adds a priority to a message. The priority can be either a number (1=min, 5=max),
 // or the corresponding names (see util.ParsePriority).
+//
+// Parameters:
+//   - priority: The priority level.
 func WithPriority(priority string) PublishOption {
 	return WithHeader("X-Priority", priority)
 }
 
 // WithTagsList adds a list of tags to a message. The tags parameter must be a comma-separated list
-// of tags. To use a slice, use WithTags instead
+// of tags. To use a slice, use WithTags instead.
+//
+// Parameters:
+//   - tags: A comma-separated string of tags.
 func WithTagsList(tags string) PublishOption {
 	return WithHeader("X-Tags", tags)
 }
 
-// WithTags adds a list of a tags to a message
+// WithTags adds a list of a tags to a message.
+//
+// Parameters:
+//   - tags: A slice of tag strings.
 func WithTags(tags []string) PublishOption {
 	return WithTagsList(strings.Join(tags, ","))
 }
@@ -47,94 +62,134 @@ func WithTags(tags []string) PublishOption {
 // WithDelay instructs the server to send the message at a later date. The delay parameter can be a
 // Unix timestamp, a duration string or a natural langage string. See https://ntfy.sh/docs/publish/#scheduled-delivery
 // for details.
+//
+// Parameters:
+//   - delay: The delay specifier (timestamp, duration, or string).
 func WithDelay(delay string) PublishOption {
 	return WithHeader("X-Delay", delay)
 }
 
-// WithClick makes the notification action open the given URL as opposed to entering the detail view
+// WithClick makes the notification action open the given URL as opposed to entering the detail view.
+//
+// Parameters:
+//   - url: The URL to open on click.
 func WithClick(url string) PublishOption {
 	return WithHeader("X-Click", url)
 }
 
-// WithIcon makes the notification use the given URL as its icon
+// WithIcon makes the notification use the given URL as its icon.
+//
+// Parameters:
+//   - icon: The URL of the icon.
 func WithIcon(icon string) PublishOption {
 	return WithHeader("X-Icon", icon)
 }
 
 // WithActions adds custom user actions to the notification. The value can be either a JSON array or the
 // simple format definition. See https://ntfy.sh/docs/publish/#action-buttons for details.
+//
+// Parameters:
+//   - value: The actions definition.
 func WithActions(value string) PublishOption {
 	return WithHeader("X-Actions", value)
 }
 
-// WithAttach sets a URL that will be used by the client to download an attachment
+// WithAttach sets a URL that will be used by the client to download an attachment.
+//
+// Parameters:
+//   - attach: The URL of the attachment.
 func WithAttach(attach string) PublishOption {
 	return WithHeader("X-Attach", attach)
 }
 
-// WithMarkdown instructs the server to interpret the message body as Markdown
+// WithMarkdown instructs the server to interpret the message body as Markdown.
 func WithMarkdown() PublishOption {
 	return WithHeader("X-Markdown", "yes")
 }
 
 // WithTemplate instructs the server to use a specific template for the message. If templateName is is "yes" or "1",
 // the server will interpret the message and title as a template.
+//
+// Parameters:
+//   - templateName: The name of the template or "yes"/"1".
 func WithTemplate(templateName string) PublishOption {
 	return WithHeader("X-Template", templateName)
 }
 
-// WithFilename sets a filename for the attachment, and/or forces the HTTP body to interpreted as an attachment
+// WithFilename sets a filename for the attachment, and/or forces the HTTP body to interpreted as an attachment.
+//
+// Parameters:
+//   - filename: The desired filename.
 func WithFilename(filename string) PublishOption {
 	return WithHeader("X-Filename", filename)
 }
 
-// WithEmail instructs the server to also send the message to the given e-mail address
+// WithEmail instructs the server to also send the message to the given e-mail address.
+//
+// Parameters:
+//   - email: The email address to forward the message to.
 func WithEmail(email string) PublishOption {
 	return WithHeader("X-Email", email)
 }
 
-// WithBasicAuth adds the Authorization header for basic auth to the request
+// WithBasicAuth adds the Authorization header for basic auth to the request.
+//
+// Parameters:
+//   - user: The username.
+//   - pass: The password.
 func WithBasicAuth(user, pass string) PublishOption {
 	return WithHeader("Authorization", util.BasicAuth(user, pass))
 }
 
-// WithBearerAuth adds the Authorization header for Bearer auth to the request
+// WithBearerAuth adds the Authorization header for Bearer auth to the request.
+//
+// Parameters:
+//   - token: The bearer token.
 func WithBearerAuth(token string) PublishOption {
 	return WithHeader("Authorization", fmt.Sprintf("Bearer %s", token))
 }
 
-// WithEmptyAuth clears the Authorization header
+// WithEmptyAuth clears the Authorization header.
 func WithEmptyAuth() PublishOption {
 	return RemoveHeader("Authorization")
 }
 
-// WithNoCache instructs the server not to cache the message server-side
+// WithNoCache instructs the server not to cache the message server-side.
 func WithNoCache() PublishOption {
 	return WithHeader("X-Cache", "no")
 }
 
-// WithNoFirebase instructs the server not to forward the message to Firebase
+// WithNoFirebase instructs the server not to forward the message to Firebase.
 func WithNoFirebase() PublishOption {
 	return WithHeader("X-Firebase", "no")
 }
 
 // WithSince limits the number of messages returned from the server. The parameter since can be a Unix
 // timestamp (see WithSinceUnixTime), a duration (WithSinceDuration) the word "all" (see WithSinceAll).
+//
+// Parameters:
+//   - since: The time specifier.
 func WithSince(since string) SubscribeOption {
 	return WithQueryParam("since", since)
 }
 
-// WithSinceAll instructs the server to return all messages for the given topic from the server
+// WithSinceAll instructs the server to return all messages for the given topic from the server.
 func WithSinceAll() SubscribeOption {
 	return WithSince("all")
 }
 
-// WithSinceDuration instructs the server to return all messages since the given duration ago
+// WithSinceDuration instructs the server to return all messages since the given duration ago.
+//
+// Parameters:
+//   - since: The duration to look back.
 func WithSinceDuration(since time.Duration) SubscribeOption {
 	return WithSinceUnixTime(time.Now().Add(-1 * since).Unix())
 }
 
-// WithSinceUnixTime instructs the server to return only messages newer or equal to the given timestamp
+// WithSinceUnixTime instructs the server to return only messages newer or equal to the given timestamp.
+//
+// Parameters:
+//   - since: The Unix timestamp.
 func WithSinceUnixTime(since int64) SubscribeOption {
 	return WithSince(fmt.Sprintf("%d", since))
 }
@@ -151,33 +206,53 @@ func WithScheduled() SubscribeOption {
 	return WithQueryParam("scheduled", "1")
 }
 
-// WithFilter is a generic subscribe option meant to be used to filter for certain messages only
+// WithFilter is a generic subscribe option meant to be used to filter for certain messages only.
+//
+// Parameters:
+//   - param: The filter parameter name.
+//   - value: The filter value.
 func WithFilter(param, value string) SubscribeOption {
 	return WithQueryParam(param, value)
 }
 
-// WithMessageFilter instructs the server to only return messages that match the exact message
+// WithMessageFilter instructs the server to only return messages that match the exact message.
+//
+// Parameters:
+//   - message: The message string to match.
 func WithMessageFilter(message string) SubscribeOption {
 	return WithQueryParam("message", message)
 }
 
-// WithTitleFilter instructs the server to only return messages with a title that match the exact string
+// WithTitleFilter instructs the server to only return messages with a title that match the exact string.
+//
+// Parameters:
+//   - title: The title string to match.
 func WithTitleFilter(title string) SubscribeOption {
 	return WithQueryParam("title", title)
 }
 
 // WithPriorityFilter instructs the server to only return messages with the matching priority. Not that messages
 // without priority also implicitly match priority 3.
+//
+// Parameters:
+//   - priority: The priority level to match.
 func WithPriorityFilter(priority int) SubscribeOption {
 	return WithQueryParam("priority", fmt.Sprintf("%d", priority))
 }
 
-// WithTagsFilter instructs the server to only return messages that contain all of the given tags
+// WithTagsFilter instructs the server to only return messages that contain all of the given tags.
+//
+// Parameters:
+//   - tags: The list of tags to match.
 func WithTagsFilter(tags []string) SubscribeOption {
 	return WithQueryParam("tags", strings.Join(tags, ","))
 }
 
-// WithHeader is a generic option to add headers to a request
+// WithHeader is a generic option to add headers to a request.
+//
+// Parameters:
+//   - header: The header name.
+//   - value: The header value.
 func WithHeader(header, value string) RequestOption {
 	return func(r *http.Request) error {
 		if value != "" {
@@ -187,7 +262,11 @@ func WithHeader(header, value string) RequestOption {
 	}
 }
 
-// WithQueryParam is a generic option to add query parameters to a request
+// WithQueryParam is a generic option to add query parameters to a request.
+//
+// Parameters:
+//   - param: The query parameter name.
+//   - value: The query parameter value.
 func WithQueryParam(param, value string) RequestOption {
 	return func(r *http.Request) error {
 		if value != "" {
@@ -199,7 +278,10 @@ func WithQueryParam(param, value string) RequestOption {
 	}
 }
 
-// RemoveHeader is a generic option to remove a header from a request
+// RemoveHeader is a generic option to remove a header from a request.
+//
+// Parameters:
+//   - header: The header name to remove.
 func RemoveHeader(header string) RequestOption {
 	return func(r *http.Request) error {
 		if header != "" {

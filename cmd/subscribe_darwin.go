@@ -11,6 +11,10 @@ var (
 	scriptLauncher = []string{"sh", "-c"}
 )
 
+// defaultClientConfigFile determines the default configuration file path for Darwin (macOS).
+//
+// Returns:
+//   - The path to the config file or an error.
 func defaultClientConfigFile() (string, error) {
 	return defaultClientConfigFileUnix()
 }

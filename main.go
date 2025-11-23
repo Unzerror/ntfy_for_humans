@@ -8,12 +8,20 @@ import (
 	"runtime"
 )
 
+// version, commit, and date are set during the build process.
 var (
 	version = "dev"
 	commit  = "unknown"
 	date    = "unknown"
 )
 
+// main is the entry point of the ntfy application.
+// It sets up the CLI application and executes it based on the provided arguments.
+//
+// The function handles:
+//   - Setting up the help template with version and contact information.
+//   - Initializing the CLI application using cmd.New().
+//   - Running the application and handling any errors by printing to stderr and exiting with status 1.
 func main() {
 	cli.AppHelpTemplate += fmt.Sprintf(`
 Try 'ntfy COMMAND --help' or https://ntfy.sh/docs/ for more information.

@@ -89,6 +89,15 @@ ntfy subscribe --from-config
 ` + clientCommandDescriptionSuffix,
 }
 
+// execSubscribe is the entry point for the `ntfy subscribe` command.
+// It parses command line arguments, configures the client, and starts
+// polling or subscribing to topics.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if subscription fails or arguments are invalid.
 func execSubscribe(c *cli.Context) error {
 	// Read config and options
 	conf, err := loadConfig(c)
@@ -154,6 +163,19 @@ func execSubscribe(c *cli.Context) error {
 	return doSubscribe(c, cl, conf, topic, command, options...)
 }
 
+// doPoll polls for messages from one or more topics.
+// It processes configured subscriptions and the optional command-line topic.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - cl: The ntfy client.
+//   - conf: The client configuration.
+//   - topic: The command-line topic (optional).
+//   - command: The command to execute for each message (optional).
+//   - options: Default subscribe options.
+//
+// Returns:
+//   - An error if polling fails.
 func doPoll(c *cli.Context, cl *client.Client, conf *client.Config, topic, command string, options ...client.SubscribeOption) error {
 	for _, s := range conf.Subscribe { // may be nil
 		if auth := maybeAddAuthHeader(s, conf); auth != nil {
@@ -171,6 +193,17 @@ func doPoll(c *cli.Context, cl *client.Client, conf *client.Config, topic, comma
 	return nil
 }
 
+// doPollSingle polls a single topic for messages.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - cl: The ntfy client.
+//   - topic: The topic to poll.
+//   - command: The command to execute for each message.
+//   - options: Subscribe options.
+//
+// Returns:
+//   - An error if polling fails.
 func doPollSingle(c *cli.Context, cl *client.Client, topic, command string, options ...client.SubscribeOption) error {
 	messages, err := cl.Poll(topic, options...)
 	if err != nil {
@@ -182,6 +215,18 @@ func doPollSingle(c *cli.Context, cl *client.Client, topic, command string, opti
 	return nil
 }
 
+// doSubscribe subscribes to one or more topics and listens for messages indefinitely.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - cl: The ntfy client.
+//   - conf: The client configuration.
+//   - topic: The command-line topic (optional).
+//   - command: The command to execute for each message (optional).
+//   - options: Default subscribe options.
+//
+// Returns:
+//   - An error if subscription setup fails.
 func doSubscribe(c *cli.Context, cl *client.Client, conf *client.Config, topic, command string, options ...client.SubscribeOption) error {
 	cmds := make(map[string]string)    // Subscription ID -> command
 	for _, s := range conf.Subscribe { // May be nil
@@ -224,6 +269,14 @@ func doSubscribe(c *cli.Context, cl *client.Client, conf *client.Config, topic, 
 	return nil
 }
 
+// maybeAddAuthHeader determines the appropriate authentication header for a subscription.
+//
+// Parameters:
+//   - s: The subscription configuration.
+//   - conf: The general client configuration.
+//
+// Returns:
+//   - A SubscribeOption adding the auth header, or nil if no auth is needed.
 func maybeAddAuthHeader(s client.Subscribe, conf *client.Config) client.SubscribeOption {
 	// if an explicit empty token or empty user:pass is given, exit without auth
 	if (s.Token != nil && *s.Token == "") || (s.User != nil && *s.User == "" && s.Password != nil && *s.Password == "") {
@@ -248,6 +301,12 @@ func maybeAddAuthHeader(s client.Subscribe, conf *client.Config) client.Subscrib
 	return nil
 }
 
+// printMessageOrRunCommand either prints the message to stdout or executes the associated command.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - m: The received message.
+//   - command: The command string (optional).
 func printMessageOrRunCommand(c *cli.Context, m *client.Message, command string) {
 	if command != "" {
 		runCommand(c, command, m)
@@ -257,12 +316,27 @@ func printMessageOrRunCommand(c *cli.Context, m *client.Message, command string)
 	}
 }
 
+// runCommand executes a shell command with the message details as environment variables.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - command: The command to execute.
+//   - m: The message triggering the command.
 func runCommand(c *cli.Context, command string, m *client.Message) {
 	if err := runCommandInternal(c, command, m); err != nil {
 		log.Warn("%s Command failed: %s", logMessagePrefix(m), err.Error())
 	}
 }
 
+// runCommandInternal creates a temporary script to execute the command.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - script: The script content.
+//   - m: The message.
+//
+// Returns:
+//   - An error if script creation or execution fails.
 func runCommandInternal(c *cli.Context, script string, m *client.Message) error {
 	scriptFile := fmt.Sprintf("%s/ntfy-subscribe-%s.%s", os.TempDir(), util.RandomString(10), scriptExt)
 	log.Debug("%s Running command '%s' via temporary script %s", logMessagePrefix(m), script, scriptFile)
@@ -280,6 +354,13 @@ func runCommandInternal(c *cli.Context, script string, m *client.Message) error 
 	return cmd.Run()
 }
 
+// envVars creates a list of environment variables based on the message fields.
+//
+// Parameters:
+//   - m: The message.
+//
+// Returns:
+//   - A slice of strings in "KEY=VALUE" format.
 func envVars(m *client.Message) []string {
 	env := make([]string, 0)
 	env = append(env, envVar(m.ID, "NTFY_ID", "id")...)
@@ -297,6 +378,14 @@ func envVars(m *client.Message) []string {
 	return append(os.Environ(), env...)
 }
 
+// envVar creates multiple environment variable strings for the same value.
+//
+// Parameters:
+//   - value: The value of the variable.
+//   - vars: A list of variable names.
+//
+// Returns:
+//   - A slice of strings in "KEY=VALUE" format.
 func envVar(value string, vars ...string) []string {
 	env := make([]string, 0)
 	for _, v := range vars {
@@ -305,6 +394,14 @@ func envVar(value string, vars ...string) []string {
 	return env
 }
 
+// loadConfig loads the client configuration from the file specified in the context
+// or from the default location.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - A Config object or an error.
 func loadConfig(c *cli.Context) (*client.Config, error) {
 	filename := c.String("config")
 	if filename != "" {
@@ -323,6 +420,12 @@ func loadConfig(c *cli.Context) (*client.Config, error) {
 	return client.NewConfig(), nil
 }
 
+// defaultClientConfigFileUnix determines the default configuration file path on Unix systems.
+// It prefers the user's config directory unless running as root.
+//
+// Returns:
+//   - The path to the config file or an error.
+//
 //lint:ignore U1000 Conditionally used in different builds
 func defaultClientConfigFileUnix() (string, error) {
 	u, err := user.Current()
@@ -340,6 +443,11 @@ func defaultClientConfigFileUnix() (string, error) {
 	return configFile, nil
 }
 
+// defaultClientConfigFileWindows determines the default configuration file path on Windows.
+//
+// Returns:
+//   - The path to the config file or an error.
+//
 //lint:ignore U1000 Conditionally used in different builds
 func defaultClientConfigFileWindows() (string, error) {
 	homeDir, err := os.UserConfigDir()
@@ -349,6 +457,13 @@ func defaultClientConfigFileWindows() (string, error) {
 	return filepath.Join(homeDir, clientUserConfigFileWindowsRelative), nil
 }
 
+// logMessagePrefix creates a prefix string for log messages identifying the topic and message ID.
+//
+// Parameters:
+//   - m: The message.
+//
+// Returns:
+//   - A string prefix.
 func logMessagePrefix(m *client.Message) string {
 	return fmt.Sprintf("%s/%s", util.ShortTopicURL(m.TopicURL), m.ID)
 }

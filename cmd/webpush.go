@@ -38,6 +38,13 @@ var cmdWebPush = &cli.Command{
 	},
 }
 
+// generateWebPushKeys generates VAPID keys for Web Push.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if key generation or writing to file fails.
 func generateWebPushKeys(c *cli.Context) error {
 	privateKey, publicKey, err := webpush.GenerateVAPIDKeys()
 	if err != nil {

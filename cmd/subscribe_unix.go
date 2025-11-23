@@ -13,6 +13,10 @@ var (
 	scriptLauncher = []string{"sh", "-c"}
 )
 
+// defaultClientConfigFile determines the default configuration file path for Unix-like systems.
+//
+// Returns:
+//   - The path to the config file or an error.
 func defaultClientConfigFile() (string, error) {
 	return defaultClientConfigFileUnix()
 }

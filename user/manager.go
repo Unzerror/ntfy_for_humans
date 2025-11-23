@@ -1,4 +1,4 @@
-// Package user deals with authentication and authorization against topics
+// Package user deals with authentication and authorization against topics.
 package user
 
 import (
@@ -34,7 +34,7 @@ const (
 	tag                             = "user_manager"
 )
 
-// Default constants that may be overridden by configs
+// Default constants that may be overridden by configs.
 const (
 	DefaultUserStatsQueueWriterInterval = 33 * time.Second
 	DefaultUserPasswordBcryptCost       = 10
@@ -46,7 +46,7 @@ var (
 	errNoRows             = errors.New("no rows found")
 )
 
-// Manager-related queries
+// Manager-related queries.
 const (
 	createTablesQueries = `
 		BEGIN;
@@ -326,7 +326,7 @@ const (
 	`
 )
 
-// Schema management queries
+// Schema management queries.
 const (
 	currentSchemaVersion     = 6
 	insertSchemaVersion      = `INSERT INTO schemaVersion VALUES (1, ?)`
@@ -559,7 +559,7 @@ type Manager struct {
 	mu         sync.Mutex
 }
 
-// Config holds the configuration for the user Manager
+// Config holds the configuration for the user Manager.
 type Config struct {
 	Filename            string              // Database filename, e.g. "/var/lib/ntfy/user.db"
 	StartupQueries      string              // Queries to run on startup, e.g. to create initial users or tiers
@@ -574,7 +574,13 @@ type Config struct {
 
 var _ Auther = (*Manager)(nil)
 
-// NewManager creates a new Manager instance
+// NewManager creates a new Manager instance.
+//
+// Parameters:
+//   - config: The configuration for the manager.
+//
+// Returns:
+//   - A new Manager or an error if initialization fails.
 func NewManager(config *Config) (*Manager, error) {
 	// Set defaults
 	if config.BcryptCost <= 0 {
@@ -615,6 +621,13 @@ func NewManager(config *Config) (*Manager, error) {
 // Authenticate checks username and password and returns a User if correct, and the user has not been
 // marked as deleted. The method returns in constant-ish time, regardless of whether the user exists or
 // the password is correct or incorrect.
+//
+// Parameters:
+//   - username: The username to check.
+//   - password: The password to check.
+//
+// Returns:
+//   - The authenticated User or ErrUnauthenticated.
 func (a *Manager) Authenticate(username, password string) (*User, error) {
 	if username == Everyone {
 		return nil, ErrUnauthenticated
@@ -637,6 +650,12 @@ func (a *Manager) Authenticate(username, password string) (*User, error) {
 
 // AuthenticateToken checks if the token exists and returns the associated User if it does.
 // The method sets the User.Token value to the token that was used for authentication.
+//
+// Parameters:
+//   - token: The access token.
+//
+// Returns:
+//   - The authenticated User or ErrUnauthenticated.
 func (a *Manager) AuthenticateToken(token string) (*User, error) {
 	if len(token) != tokenLength {
 		return nil, ErrUnauthenticated
@@ -653,6 +672,16 @@ func (a *Manager) AuthenticateToken(token string) (*User, error) {
 // CreateToken generates a random token for the given user and returns it. The token expires
 // after a fixed duration unless ChangeToken is called. This function also prunes tokens for the
 // given user, if there are too many of them.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - label: A label for the token.
+//   - expires: The expiration time for the token.
+//   - origin: The IP address where the token was created.
+//   - provisioned: Whether the token was provisioned by configuration.
+//
+// Returns:
+//   - The created Token or an error.
 func (a *Manager) CreateToken(userID, label string, expires time.Time, origin netip.Addr, provisioned bool) (*Token, error) {
 	return queryTx(a.db, func(tx *sql.Tx) (*Token, error) {
 		return a.createTokenTx(tx, userID, GenerateToken(), label, expires, origin, provisioned)
@@ -693,7 +722,13 @@ func (a *Manager) createTokenTx(tx *sql.Tx, userID, token, label string, expires
 	}, nil
 }
 
-// Tokens returns all existing tokens for the user with the given user ID
+// Tokens returns all existing tokens for the user with the given user ID.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//
+// Returns:
+//   - A list of Tokens or an error.
 func (a *Manager) Tokens(userID string) ([]*Token, error) {
 	rows, err := a.db.Query(selectTokensQuery, userID)
 	if err != nil {
@@ -732,7 +767,14 @@ func (a *Manager) allProvisionedTokens() ([]*Token, error) {
 	return tokens, nil
 }
 
-// Token returns a specific token for a user
+// Token returns a specific token for a user.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - token: The token string.
+//
+// Returns:
+//   - The Token or an error.
 func (a *Manager) Token(userID, token string) (*Token, error) {
 	rows, err := a.db.Query(selectTokenQuery, userID, token)
 	if err != nil {
@@ -768,7 +810,16 @@ func (a *Manager) readToken(rows *sql.Rows) (*Token, error) {
 	}, nil
 }
 
-// ChangeToken updates a token's label and/or expiry date
+// ChangeToken updates a token's label and/or expiry date.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - token: The token string.
+//   - label: The new label (optional).
+//   - expires: The new expiration time (optional).
+//
+// Returns:
+//   - The updated Token or an error.
 func (a *Manager) ChangeToken(userID, token string, label *string, expires *time.Time) (*Token, error) {
 	if token == "" {
 		return nil, errNoTokenProvided
@@ -797,7 +848,14 @@ func (a *Manager) ChangeToken(userID, token string, label *string, expires *time
 	return a.Token(userID, token)
 }
 
-// RemoveToken deletes the token defined in User.Token
+// RemoveToken deletes the token defined in User.Token.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - token: The token string to remove.
+//
+// Returns:
+//   - An error if the token cannot be removed.
 func (a *Manager) RemoveToken(userID, token string) error {
 	if err := a.CanChangeToken(userID, token); err != nil {
 		return err
@@ -818,6 +876,13 @@ func (a *Manager) removeTokenTx(tx *sql.Tx, userID, token string) error {
 }
 
 // CanChangeToken checks if the token can be changed. If the token is provisioned, it cannot be changed.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - token: The token string.
+//
+// Returns:
+//   - An error if the token cannot be changed.
 func (a *Manager) CanChangeToken(userID, token string) error {
 	t, err := a.Token(userID, token)
 	if err != nil {
@@ -828,7 +893,10 @@ func (a *Manager) CanChangeToken(userID, token string) error {
 	return nil
 }
 
-// RemoveExpiredTokens deletes all expired tokens from the database
+// RemoveExpiredTokens deletes all expired tokens from the database.
+//
+// Returns:
+//   - An error if the operation fails.
 func (a *Manager) RemoveExpiredTokens() error {
 	if _, err := a.db.Exec(deleteExpiredTokensQuery, time.Now().Unix()); err != nil {
 		return err
@@ -836,7 +904,13 @@ func (a *Manager) RemoveExpiredTokens() error {
 	return nil
 }
 
-// PhoneNumbers returns all phone numbers for the user with the given user ID
+// PhoneNumbers returns all phone numbers for the user with the given user ID.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//
+// Returns:
+//   - A list of phone numbers or an error.
 func (a *Manager) PhoneNumbers(userID string) ([]string, error) {
 	rows, err := a.db.Query(selectPhoneNumbersQuery, userID)
 	if err != nil {
@@ -869,7 +943,14 @@ func (a *Manager) readPhoneNumber(rows *sql.Rows) (string, error) {
 	return phoneNumber, nil
 }
 
-// AddPhoneNumber adds a phone number to the user with the given user ID
+// AddPhoneNumber adds a phone number to the user with the given user ID.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - phoneNumber: The phone number to add.
+//
+// Returns:
+//   - An error if the phone number already exists or the operation fails.
 func (a *Manager) AddPhoneNumber(userID string, phoneNumber string) error {
 	if _, err := a.db.Exec(insertPhoneNumberQuery, userID, phoneNumber); err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
@@ -880,13 +961,23 @@ func (a *Manager) AddPhoneNumber(userID string, phoneNumber string) error {
 	return nil
 }
 
-// RemovePhoneNumber deletes a phone number from the user with the given user ID
+// RemovePhoneNumber deletes a phone number from the user with the given user ID.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - phoneNumber: The phone number to remove.
+//
+// Returns:
+//   - An error if the operation fails.
 func (a *Manager) RemovePhoneNumber(userID string, phoneNumber string) error {
 	_, err := a.db.Exec(deletePhoneNumberQuery, userID, phoneNumber)
 	return err
 }
 
-// RemoveDeletedUsers deletes all users that have been marked deleted for
+// RemoveDeletedUsers deletes all users that have been marked deleted for.
+//
+// Returns:
+//   - An error if the operation fails.
 func (a *Manager) RemoveDeletedUsers() error {
 	if _, err := a.db.Exec(deleteUsersMarkedQuery, time.Now().Unix()); err != nil {
 		return err
@@ -894,7 +985,14 @@ func (a *Manager) RemoveDeletedUsers() error {
 	return nil
 }
 
-// ChangeSettings persists the user settings
+// ChangeSettings persists the user settings.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - prefs: The new user preferences.
+//
+// Returns:
+//   - An error if the operation fails.
 func (a *Manager) ChangeSettings(userID string, prefs *Prefs) error {
 	b, err := json.Marshal(prefs)
 	if err != nil {
@@ -907,6 +1005,9 @@ func (a *Manager) ChangeSettings(userID string, prefs *Prefs) error {
 }
 
 // ResetStats resets all user stats in the user database. This touches all users.
+//
+// Returns:
+//   - An error if the operation fails.
 func (a *Manager) ResetStats() error {
 	a.mu.Lock() // Includes database query to avoid races!
 	defer a.mu.Unlock()
@@ -918,7 +1019,11 @@ func (a *Manager) ResetStats() error {
 }
 
 // EnqueueUserStats adds the user to a queue which writes out user stats (messages, emails, ..) in
-// batches at a regular interval
+// batches at a regular interval.
+//
+// Parameters:
+//   - userID: The ID of the user.
+//   - stats: The user statistics to enqueue.
 func (a *Manager) EnqueueUserStats(userID string, stats *Stats) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -926,7 +1031,11 @@ func (a *Manager) EnqueueUserStats(userID string, stats *Stats) {
 }
 
 // EnqueueTokenUpdate adds the token update to  a queue which writes out token access times
-// in batches at a regular interval
+// in batches at a regular interval.
+//
+// Parameters:
+//   - tokenID: The token string.
+//   - update: The token update information.
 func (a *Manager) EnqueueTokenUpdate(tokenID string, update *TokenUpdate) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -1012,6 +1121,14 @@ func (a *Manager) updateTokenLastAccessTx(tx *sql.Tx, token string, lastAccess i
 
 // Authorize returns nil if the given user has access to the given topic using the desired
 // permission. The user param may be nil to signal an anonymous user.
+//
+// Parameters:
+//   - user: The user to authorize (may be nil).
+//   - topic: The topic to check access for.
+//   - perm: The required permission.
+//
+// Returns:
+//   - nil if authorized, ErrUnauthorized otherwise.
 func (a *Manager) Authorize(user *User, topic string, perm Permission) error {
 	if user != nil && user.Role == RoleAdmin {
 		return nil // Admin can do everything
@@ -1050,7 +1167,16 @@ func (a *Manager) resolvePerms(base, perm Permission) error {
 	return ErrUnauthorized
 }
 
-// AddUser adds a user with the given username, password and role
+// AddUser adds a user with the given username, password and role.
+//
+// Parameters:
+//   - username: The username for the new user.
+//   - password: The password (plain text or hash).
+//   - role: The role for the new user.
+//   - hashed: Whether the password is already hashed.
+//
+// Returns:
+//   - An error if user creation fails.
 func (a *Manager) AddUser(username, password string, role Role, hashed bool) error {
 	return execTx(a.db, func(tx *sql.Tx) error {
 		return a.addUserTx(tx, username, password, role, hashed, false)
@@ -1088,6 +1214,12 @@ func (a *Manager) addUserTx(tx *sql.Tx, username, password string, role Role, ha
 
 // RemoveUser deletes the user with the given username. The function returns nil on success, even
 // if the user did not exist in the first place.
+//
+// Parameters:
+//   - username: The username of the user to remove.
+//
+// Returns:
+//   - An error if deletion fails.
 func (a *Manager) RemoveUser(username string) error {
 	if err := a.CanChangeUser(username); err != nil {
 		return err
@@ -1110,6 +1242,12 @@ func (a *Manager) removeUserTx(tx *sql.Tx, username string) error {
 
 // MarkUserRemoved sets the deleted flag on the user, and deletes all access tokens. This prevents
 // successful auth via Authenticate. A background process will delete the user at a later date.
+//
+// Parameters:
+//   - user: The user to mark as removed.
+//
+// Returns:
+//   - An error if the operation fails.
 func (a *Manager) MarkUserRemoved(user *User) error {
 	if !AllowedUsername(user.Name) {
 		return ErrInvalidArgument
@@ -1132,6 +1270,9 @@ func (a *Manager) MarkUserRemoved(user *User) error {
 }
 
 // Users returns a list of users. It always also returns the Everyone user ("*").
+//
+// Returns:
+//   - A list of Users or an error.
 func (a *Manager) Users() ([]*User, error) {
 	rows, err := a.db.Query(selectUsernamesQuery)
 	if err != nil {
@@ -1160,7 +1301,10 @@ func (a *Manager) Users() ([]*User, error) {
 	return users, nil
 }
 
-// UsersCount returns the number of users in the databsae
+// UsersCount returns the number of users in the databsae.
+//
+// Returns:
+//   - The number of users or an error.
 func (a *Manager) UsersCount() (int64, error) {
 	rows, err := a.db.Query(selectUserCountQuery)
 	if err != nil {
@@ -1179,6 +1323,12 @@ func (a *Manager) UsersCount() (int64, error) {
 
 // User returns the user with the given username if it exists, or ErrUserNotFound otherwise.
 // You may also pass Everyone to retrieve the anonymous user and its Grant list.
+//
+// Parameters:
+//   - username: The username to lookup.
+//
+// Returns:
+//   - The User or ErrUserNotFound.
 func (a *Manager) User(username string) (*User, error) {
 	rows, err := a.db.Query(selectUserByNameQuery, username)
 	if err != nil {
@@ -1187,7 +1337,13 @@ func (a *Manager) User(username string) (*User, error) {
 	return a.readUser(rows)
 }
 
-// UserByID returns the user with the given ID if it exists, or ErrUserNotFound otherwise
+// UserByID returns the user with the given ID if it exists, or ErrUserNotFound otherwise.
+//
+// Parameters:
+//   - id: The user ID.
+//
+// Returns:
+//   - The User or ErrUserNotFound.
 func (a *Manager) UserByID(id string) (*User, error) {
 	rows, err := a.db.Query(selectUserByIDQuery, id)
 	if err != nil {
@@ -1197,6 +1353,12 @@ func (a *Manager) UserByID(id string) (*User, error) {
 }
 
 // UserByStripeCustomer returns the user with the given Stripe customer ID if it exists, or ErrUserNotFound otherwise.
+//
+// Parameters:
+//   - stripeCustomerID: The Stripe customer ID.
+//
+// Returns:
+//   - The User or ErrUserNotFound.
 func (a *Manager) UserByStripeCustomer(stripeCustomerID string) (*User, error) {
 	rows, err := a.db.Query(selectUserByStripeCustomerIDQuery, stripeCustomerID)
 	if err != nil {
@@ -1276,7 +1438,10 @@ func (a *Manager) readUser(rows *sql.Rows) (*User, error) {
 	return user, nil
 }
 
-// AllGrants returns all user-specific access control entries, mapped to their respective user IDs
+// AllGrants returns all user-specific access control entries, mapped to their respective user IDs.
+//
+// Returns:
+//   - A map of userID to a list of Grants, or an error.
 func (a *Manager) AllGrants() (map[string][]Grant, error) {
 	rows, err := a.db.Query(selectUserAllAccessQuery)
 	if err != nil {
@@ -1304,7 +1469,13 @@ func (a *Manager) AllGrants() (map[string][]Grant, error) {
 	return grants, nil
 }
 
-// Grants returns all user-specific access control entries
+// Grants returns all user-specific access control entries.
+//
+// Parameters:
+//   - username: The username to retrieve grants for.
+//
+// Returns:
+//   - A list of Grants or an error.
 func (a *Manager) Grants(username string) ([]Grant, error) {
 	rows, err := a.db.Query(selectUserAccessQuery, username)
 	if err != nil {
@@ -1329,7 +1500,13 @@ func (a *Manager) Grants(username string) ([]Grant, error) {
 	return grants, nil
 }
 
-// Reservations returns all user-owned topics, and the associated everyone-access
+// Reservations returns all user-owned topics, and the associated everyone-access.
+//
+// Parameters:
+//   - username: The username to retrieve reservations for.
+//
+// Returns:
+//   - A list of Reservations or an error.
 func (a *Manager) Reservations(username string) ([]Reservation, error) {
 	rows, err := a.db.Query(selectUserReservationsQuery, Everyone, username)
 	if err != nil {
@@ -1355,7 +1532,14 @@ func (a *Manager) Reservations(username string) ([]Reservation, error) {
 	return reservations, nil
 }
 
-// HasReservation returns true if the given topic access is owned by the user
+// HasReservation returns true if the given topic access is owned by the user.
+//
+// Parameters:
+//   - username: The username.
+//   - topic: The topic to check.
+//
+// Returns:
+//   - True if the user owns the reservation, false otherwise.
 func (a *Manager) HasReservation(username, topic string) (bool, error) {
 	rows, err := a.db.Query(selectUserHasReservationQuery, username, escapeUnderscore(topic))
 	if err != nil {
@@ -1372,7 +1556,13 @@ func (a *Manager) HasReservation(username, topic string) (bool, error) {
 	return count > 0, nil
 }
 
-// ReservationsCount returns the number of reservations owned by this user
+// ReservationsCount returns the number of reservations owned by this user.
+//
+// Parameters:
+//   - username: The username.
+//
+// Returns:
+//   - The count of reservations.
 func (a *Manager) ReservationsCount(username string) (int64, error) {
 	rows, err := a.db.Query(selectUserReservationsCountQuery, username)
 	if err != nil {
@@ -1390,7 +1580,13 @@ func (a *Manager) ReservationsCount(username string) (int64, error) {
 }
 
 // ReservationOwner returns user ID of the user that owns this topic, or an
-// empty string if it's not owned by anyone
+// empty string if it's not owned by anyone.
+//
+// Parameters:
+//   - topic: The topic name.
+//
+// Returns:
+//   - The owner's user ID or empty string.
 func (a *Manager) ReservationOwner(topic string) (string, error) {
 	rows, err := a.db.Query(selectUserReservationsOwnerQuery, escapeUnderscore(topic))
 	if err != nil {
@@ -1407,7 +1603,15 @@ func (a *Manager) ReservationOwner(topic string) (string, error) {
 	return ownerUserID, nil
 }
 
-// ChangePassword changes a user's password
+// ChangePassword changes a user's password.
+//
+// Parameters:
+//   - username: The username.
+//   - password: The new password.
+//   - hashed: Whether the new password is a hash.
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) ChangePassword(username, password string, hashed bool) error {
 	if err := a.CanChangeUser(username); err != nil {
 		return err
@@ -1419,6 +1623,12 @@ func (a *Manager) ChangePassword(username, password string, hashed bool) error {
 
 // CanChangeUser checks if the user with the given username can be changed.
 // This is used to prevent changes to provisioned users, which are defined in the config file.
+//
+// Parameters:
+//   - username: The username.
+//
+// Returns:
+//   - An error if the user cannot be changed.
 func (a *Manager) CanChangeUser(username string) error {
 	user, err := a.User(username)
 	if err != nil {
@@ -1451,6 +1661,13 @@ func (a *Manager) changePasswordTx(tx *sql.Tx, username, password string, hashed
 
 // ChangeRole changes a user's role. When a role is changed from RoleUser to RoleAdmin,
 // all existing access control entries (Grant) are removed, since they are no longer needed.
+//
+// Parameters:
+//   - username: The username.
+//   - role: The new role.
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) ChangeRole(username string, role Role) error {
 	if err := a.CanChangeUser(username); err != nil {
 		return err
@@ -1486,6 +1703,13 @@ func (a *Manager) changeProvisionedTx(tx *sql.Tx, username string, provisioned b
 
 // ChangeTier changes a user's tier using the tier code. This function does not delete reservations, messages,
 // or attachments, even if the new tier has lower limits in this regard. That has to be done elsewhere.
+//
+// Parameters:
+//   - username: The username.
+//   - tier: The new tier code.
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) ChangeTier(username, tier string) error {
 	if !AllowedUsername(username) {
 		return ErrInvalidArgument
@@ -1502,7 +1726,13 @@ func (a *Manager) ChangeTier(username, tier string) error {
 	return nil
 }
 
-// ResetTier removes the tier from the given user
+// ResetTier removes the tier from the given user.
+//
+// Parameters:
+//   - username: The username.
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) ResetTier(username string) error {
 	if !AllowedUsername(username) && username != Everyone && username != "" {
 		return ErrInvalidArgument
@@ -1531,6 +1761,13 @@ func (a *Manager) checkReservationsLimit(username string, reservationsLimit int6
 
 // AllowReservation tests if a user may create an access control entry for the given topic.
 // If there are any ACL entries that are not owned by the user, an error is returned.
+//
+// Parameters:
+//   - username: The username.
+//   - topic: The topic name.
+//
+// Returns:
+//   - An error if reservation is not allowed.
 func (a *Manager) AllowReservation(username string, topic string) error {
 	if (!AllowedUsername(username) && username != Everyone) || !AllowedTopic(topic) {
 		return ErrInvalidArgument
@@ -1556,6 +1793,14 @@ func (a *Manager) AllowReservation(username string, topic string) error {
 // AllowAccess adds or updates an entry in th access control list for a specific user. It controls
 // read/write access to a topic. The parameter topicPattern may include wildcards (*). The ACL entry
 // owner may either be a user (username), or the system (empty).
+//
+// Parameters:
+//   - username: The username.
+//   - topicPattern: The topic pattern (e.g. "mytopic*").
+//   - permission: The permission to grant.
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) AllowAccess(username string, topicPattern string, permission Permission) error {
 	return execTx(a.db, func(tx *sql.Tx) error {
 		return a.allowAccessTx(tx, username, topicPattern, permission, false)
@@ -1577,6 +1822,13 @@ func (a *Manager) allowAccessTx(tx *sql.Tx, username string, topicPattern string
 
 // ResetAccess removes an access control list entry for a specific username/topic, or (if topic is
 // empty) for an entire user. The parameter topicPattern may include wildcards (*).
+//
+// Parameters:
+//   - username: The username.
+//   - topicPattern: The topic pattern (optional).
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) ResetAccess(username string, topicPattern string) error {
 	return execTx(a.db, func(tx *sql.Tx) error {
 		return a.resetAccessTx(tx, username, topicPattern)
@@ -1603,6 +1855,14 @@ func (a *Manager) resetAccessTx(tx *sql.Tx, username string, topicPattern string
 // AddReservation creates two access control entries for the given topic: one with full read/write access for the
 // given user, and one for Everyone with the permission passed as everyone. The user also owns the entries, and
 // can modify or delete them.
+//
+// Parameters:
+//   - username: The username.
+//   - topic: The topic name.
+//   - everyone: The permission for everyone else.
+//
+// Returns:
+//   - An error if the reservation fails.
 func (a *Manager) AddReservation(username string, topic string, everyone Permission) error {
 	if !AllowedUsername(username) || username == Everyone || !AllowedTopic(topic) {
 		return ErrInvalidArgument
@@ -1623,6 +1883,13 @@ func (a *Manager) AddReservation(username string, topic string, everyone Permiss
 
 // RemoveReservations deletes the access control entries associated with the given username/topic, as
 // well as all entries with Everyone/topic. This is the counterpart for AddReservation.
+//
+// Parameters:
+//   - username: The username.
+//   - topics: A list of topics to remove reservations for.
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) RemoveReservations(username string, topics ...string) error {
 	if !AllowedUsername(username) || username == Everyone || len(topics) == 0 {
 		return ErrInvalidArgument
@@ -1648,12 +1915,21 @@ func (a *Manager) RemoveReservations(username string, topics ...string) error {
 	return tx.Commit()
 }
 
-// DefaultAccess returns the default read/write access if no access control entry matches
+// DefaultAccess returns the default read/write access if no access control entry matches.
+//
+// Returns:
+//   - The default permission.
 func (a *Manager) DefaultAccess() Permission {
 	return a.config.DefaultAccess
 }
 
-// AddTier creates a new tier in the database
+// AddTier creates a new tier in the database.
+//
+// Parameters:
+//   - tier: The tier to add.
+//
+// Returns:
+//   - An error if the tier cannot be added.
 func (a *Manager) AddTier(tier *Tier) error {
 	if tier.ID == "" {
 		tier.ID = util.RandomStringPrefix(tierIDPrefix, tierIDLength)
@@ -1664,7 +1940,13 @@ func (a *Manager) AddTier(tier *Tier) error {
 	return nil
 }
 
-// UpdateTier updates a tier's properties in the database
+// UpdateTier updates a tier's properties in the database.
+//
+// Parameters:
+//   - tier: The tier to update.
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) UpdateTier(tier *Tier) error {
 	if _, err := a.db.Exec(updateTierQuery, tier.Name, tier.MessageLimit, int64(tier.MessageExpiryDuration.Seconds()), tier.EmailLimit, tier.CallLimit, tier.ReservationLimit, tier.AttachmentFileSizeLimit, tier.AttachmentTotalSizeLimit, int64(tier.AttachmentExpiryDuration.Seconds()), tier.AttachmentBandwidthLimit, nullString(tier.StripeMonthlyPriceID), nullString(tier.StripeYearlyPriceID), tier.Code); err != nil {
 		return err
@@ -1672,7 +1954,13 @@ func (a *Manager) UpdateTier(tier *Tier) error {
 	return nil
 }
 
-// RemoveTier deletes the tier with the given code
+// RemoveTier deletes the tier with the given code.
+//
+// Parameters:
+//   - code: The tier code.
+//
+// Returns:
+//   - An error if the tier is in use or deletion fails.
 func (a *Manager) RemoveTier(code string) error {
 	if !AllowedTier(code) {
 		return ErrInvalidArgument
@@ -1684,7 +1972,14 @@ func (a *Manager) RemoveTier(code string) error {
 	return nil
 }
 
-// ChangeBilling updates a user's billing fields, namely the Stripe customer ID, and subscription information
+// ChangeBilling updates a user's billing fields, namely the Stripe customer ID, and subscription information.
+//
+// Parameters:
+//   - username: The username.
+//   - billing: The billing information.
+//
+// Returns:
+//   - An error if the update fails.
 func (a *Manager) ChangeBilling(username string, billing *Billing) error {
 	if _, err := a.db.Exec(updateBillingQuery, nullString(billing.StripeCustomerID), nullString(billing.StripeSubscriptionID), nullString(string(billing.StripeSubscriptionStatus)), nullString(string(billing.StripeSubscriptionInterval)), nullInt64(billing.StripeSubscriptionPaidUntil.Unix()), nullInt64(billing.StripeSubscriptionCancelAt.Unix()), username); err != nil {
 		return err
@@ -1692,7 +1987,10 @@ func (a *Manager) ChangeBilling(username string, billing *Billing) error {
 	return nil
 }
 
-// Tiers returns a list of all Tier structs
+// Tiers returns a list of all Tier structs.
+//
+// Returns:
+//   - A list of Tiers or an error.
 func (a *Manager) Tiers() ([]*Tier, error) {
 	rows, err := a.db.Query(selectTiersQuery)
 	if err != nil {
@@ -1712,7 +2010,13 @@ func (a *Manager) Tiers() ([]*Tier, error) {
 	return tiers, nil
 }
 
-// Tier returns a Tier based on the code, or ErrTierNotFound if it does not exist
+// Tier returns a Tier based on the code, or ErrTierNotFound if it does not exist.
+//
+// Parameters:
+//   - code: The tier code.
+//
+// Returns:
+//   - The Tier or ErrTierNotFound.
 func (a *Manager) Tier(code string) (*Tier, error) {
 	rows, err := a.db.Query(selectTierByCodeQuery, code)
 	if err != nil {
@@ -1722,7 +2026,13 @@ func (a *Manager) Tier(code string) (*Tier, error) {
 	return a.readTier(rows)
 }
 
-// TierByStripePrice returns a Tier based on the Stripe price ID, or ErrTierNotFound if it does not exist
+// TierByStripePrice returns a Tier based on the Stripe price ID, or ErrTierNotFound if it does not exist.
+//
+// Parameters:
+//   - priceID: The Stripe price ID.
+//
+// Returns:
+//   - The Tier or ErrTierNotFound.
 func (a *Manager) TierByStripePrice(priceID string) (*Tier, error) {
 	rows, err := a.db.Query(selectTierByPriceIDQuery, priceID, priceID)
 	if err != nil {
@@ -1763,7 +2073,10 @@ func (a *Manager) readTier(rows *sql.Rows) (*Tier, error) {
 	}, nil
 }
 
-// Close closes the underlying database
+// Close closes the underlying database.
+//
+// Returns:
+//   - An error if closing fails.
 func (a *Manager) Close() error {
 	return a.db.Close()
 }
@@ -2139,5 +2452,5 @@ func queryTx[T any](db *sql.DB, f func(tx *sql.Tx) (T, error)) (T, error) {
 	if err := tx.Commit(); err != nil {
 		return t, err
 	}
-	return t, nil
+	return t, err
 }

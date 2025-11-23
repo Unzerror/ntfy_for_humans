@@ -85,6 +85,15 @@ it has incredibly useful information: https://ntfy.sh/docs/publish/.
 ` + clientCommandDescriptionSuffix,
 }
 
+// execPublish is the entry point for the `ntfy publish` command.
+// It parses the command line arguments and flags, configures the client,
+// and sends the message to the specified topic.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if publishing fails or arguments are invalid.
 func execPublish(c *cli.Context) error {
 	conf, err := loadConfig(c)
 	if err != nil {
@@ -235,13 +244,22 @@ func execPublish(c *cli.Context) error {
 }
 
 // parseTopicMessageCommand reads the topic and the remaining arguments from the context.
-
+//
 // There are a few cases to consider:
 //
 //	ntfy publish <topic> [<message>]
 //	ntfy publish --wait-cmd <topic> <command>
 //	NTFY_TOPIC=.. ntfy publish [<message>]
 //	NTFY_TOPIC=.. ntfy publish --wait-cmd <command>
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - topic: The target topic.
+//   - message: The message to send.
+//   - command: The command to execute (if --wait-cmd is set).
+//   - err: An error if parsing fails.
 func parseTopicMessageCommand(c *cli.Context) (topic string, message string, command []string, err error) {
 	var args []string
 	topic, args, err = parseTopicAndArgs(c)
@@ -272,6 +290,16 @@ func parseTopicMessageCommand(c *cli.Context) (topic string, message string, com
 	return
 }
 
+// parseTopicAndArgs determines the topic and returns the remaining arguments.
+// It checks for the topic in the environment variable NTFY_TOPIC first, then in the arguments.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - topic: The extracted topic.
+//   - args: The remaining arguments.
+//   - err: An error if no topic is found.
 func parseTopicAndArgs(c *cli.Context) (topic string, args []string, err error) {
 	envTopic := os.Getenv("NTFY_TOPIC")
 	if envTopic != "" {
@@ -284,6 +312,14 @@ func parseTopicAndArgs(c *cli.Context) (topic string, args []string, err error) 
 	return c.Args().Get(0), remainingArgs(c, 1), nil
 }
 
+// remainingArgs returns the arguments from the context starting from the given index.
+//
+// Parameters:
+//   - c: The CLI context.
+//   - fromIndex: The index to start from.
+//
+// Returns:
+//   - A slice of remaining arguments.
 func remainingArgs(c *cli.Context, fromIndex int) []string {
 	if c.NArg() > fromIndex {
 		return c.Args().Slice()[fromIndex:]
@@ -291,6 +327,14 @@ func remainingArgs(c *cli.Context, fromIndex int) []string {
 	return []string{}
 }
 
+// waitForProcess waits for the process with the given PID to exit.
+//
+// Parameters:
+//   - pid: The PID of the process to wait for.
+//
+// Returns:
+//   - message: A message indicating the process exit status.
+//   - err: An error if the process does not exist.
 func waitForProcess(pid int) (message string, err error) {
 	if !processExists(pid) {
 		return "", fmt.Errorf("process with PID %d not running", pid)
@@ -305,6 +349,14 @@ func waitForProcess(pid int) (message string, err error) {
 	return fmt.Sprintf("Process with PID %d exited after %s", pid, runtime), nil
 }
 
+// runAndWaitForCommand runs the given command and waits for it to finish.
+//
+// Parameters:
+//   - command: The command to run as a slice of strings.
+//
+// Returns:
+//   - message: A message indicating the command completion status.
+//   - err: An error if the command fails to run.
 func runAndWaitForCommand(command []string) (message string, err error) {
 	prettyCmd := util.QuoteCommand(command)
 	log.Debug("Running command: %s", prettyCmd)
@@ -328,6 +380,10 @@ func runAndWaitForCommand(command []string) (message string, err error) {
 	return fmt.Sprintf("Command succeeded after %s: %s", runtime, prettyCmd), nil
 }
 
+// isStdinRedirected checks if stdin is being piped or redirected.
+//
+// Returns:
+//   - True if stdin is redirected, false otherwise.
 func isStdinRedirected() bool {
 	stat, err := os.Stdin.Stat()
 	if err != nil {

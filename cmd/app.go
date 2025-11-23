@@ -1,4 +1,4 @@
-// Package cmd provides the ntfy CLI application
+// Package cmd provides the ntfy CLI application.
 package cmd
 
 import (
@@ -31,7 +31,10 @@ var (
 	logLevelOverrideRegex = regexp.MustCompile(`(?i)^([^=\s]+)(?:\s*=\s*(\S+))?\s*->\s*(TRACE|DEBUG|INFO|WARN|ERROR)$`)
 )
 
-// New creates a new CLI application
+// New creates a new CLI application.
+//
+// Returns:
+//   - A new cli.App instance configured for ntfy.
 func New() *cli.App {
 	return &cli.App{
 		Name:                   "ntfy",
@@ -48,6 +51,13 @@ func New() *cli.App {
 	}
 }
 
+// initLogFunc initializes the logging configuration based on CLI flags.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if log initialization fails, such as when opening the log file.
 func initLogFunc(c *cli.Context) error {
 	log.SetLevel(log.ToLevel(c.String("log-level")))
 	log.SetFormat(log.ToFormat(c.String("log-format")))
@@ -73,6 +83,13 @@ func initLogFunc(c *cli.Context) error {
 	return nil
 }
 
+// applyLogLevelOverrides parses and applies log level overrides.
+//
+// Parameters:
+//   - rawOverrides: A slice of override strings in the format "field=value -> LEVEL" or "field -> LEVEL".
+//
+// Returns:
+//   - An error if any override string is invalid.
 func applyLogLevelOverrides(rawOverrides []string) error {
 	for _, override := range rawOverrides {
 		m := logLevelOverrideRegex.FindStringSubmatch(override)

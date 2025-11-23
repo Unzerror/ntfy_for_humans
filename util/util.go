@@ -41,13 +41,26 @@ var (
 	ErrTooLargeJSON  = errors.New("too large JSON")
 )
 
-// FileExists checks if a file exists, and returns true if it does
+// FileExists checks if a file exists, and returns true if it does.
+//
+// Parameters:
+//   - filename: The path to the file.
+//
+// Returns:
+//   - True if the file exists, false otherwise.
 func FileExists(filename string) bool {
 	stat, _ := os.Stat(filename)
 	return stat != nil
 }
 
-// Contains returns true if needle is contained in haystack
+// Contains returns true if needle is contained in haystack.
+//
+// Parameters:
+//   - haystack: The slice to search.
+//   - needle: The element to search for.
+//
+// Returns:
+//   - True if found, false otherwise.
 func Contains[T comparable](haystack []T, needle T) bool {
 	for _, s := range haystack {
 		if s == needle {
@@ -58,6 +71,13 @@ func Contains[T comparable](haystack []T, needle T) bool {
 }
 
 // ContainsIP returns true if any one of the of prefixes contains the ip.
+//
+// Parameters:
+//   - haystack: A slice of IP prefixes.
+//   - needle: The IP address to check.
+//
+// Returns:
+//   - True if the IP is contained in any prefix.
 func ContainsIP(haystack []netip.Prefix, needle netip.Addr) bool {
 	for _, s := range haystack {
 		if s.Contains(needle) {
@@ -67,7 +87,14 @@ func ContainsIP(haystack []netip.Prefix, needle netip.Addr) bool {
 	return false
 }
 
-// ContainsAll returns true if all needles are contained in haystack
+// ContainsAll returns true if all needles are contained in haystack.
+//
+// Parameters:
+//   - haystack: The slice to search.
+//   - needles: The elements to search for.
+//
+// Returns:
+//   - True if all needles are found.
 func ContainsAll[T comparable](haystack []T, needles []T) bool {
 	for _, needle := range needles {
 		if !Contains(haystack, needle) {
@@ -77,7 +104,14 @@ func ContainsAll[T comparable](haystack []T, needles []T) bool {
 	return true
 }
 
-// SplitNoEmpty splits a string using strings.Split, but filters out empty strings
+// SplitNoEmpty splits a string using strings.Split, but filters out empty strings.
+//
+// Parameters:
+//   - s: The string to split.
+//   - sep: The separator.
+//
+// Returns:
+//   - A slice of non-empty strings.
 func SplitNoEmpty(s string, sep string) []string {
 	res := make([]string, 0)
 	for _, r := range strings.Split(s, sep) {
@@ -90,6 +124,14 @@ func SplitNoEmpty(s string, sep string) []string {
 
 // SplitKV splits a string into a key/value pair using a separator, and trimming space. If the separator
 // is not found, key is empty.
+//
+// Parameters:
+//   - s: The string to split.
+//   - sep: The separator.
+//
+// Returns:
+//   - key: The key part.
+//   - value: The value part.
 func SplitKV(s string, sep string) (key string, value string) {
 	kv := strings.SplitN(strings.TrimSpace(s), sep, 2)
 	if len(kv) == 2 {
@@ -98,8 +140,15 @@ func SplitKV(s string, sep string) (key string, value string) {
 	return "", strings.TrimSpace(kv[0])
 }
 
-// Map applies a function to each element of a slice and returns a new slice with the results
+// Map applies a function to each element of a slice and returns a new slice with the results.
 // Example: Map([]int{1, 2, 3}, func(i int) int { return i * 2 }) -> []int{2, 4, 6}
+//
+// Parameters:
+//   - slice: The input slice.
+//   - f: The function to apply.
+//
+// Returns:
+//   - A new slice with the transformed elements.
 func Map[T any, U any](slice []T, f func(T) U) []U {
 	result := make([]U, len(slice))
 	for i, v := range slice {
@@ -110,6 +159,13 @@ func Map[T any, U any](slice []T, f func(T) U) []U {
 
 // Filter returns a new slice containing only the elements of the original slice for which the
 // given function returns true.
+//
+// Parameters:
+//   - slice: The input slice.
+//   - f: The filter function.
+//
+// Returns:
+//   - A new slice containing matching elements.
 func Filter[T any](slice []T, f func(T) bool) []T {
 	result := make([]T, 0)
 	for _, v := range slice {
@@ -122,6 +178,14 @@ func Filter[T any](slice []T, f func(T) bool) []T {
 
 // Find returns the first element in the slice that satisfies the given function, and a boolean indicating
 // whether such an element was found. If no element is found, it returns the zero value of T and false.
+//
+// Parameters:
+//   - slice: The input slice.
+//   - f: The search function.
+//
+// Returns:
+//   - The found element (or zero value).
+//   - True if found, false otherwise.
 func Find[T any](slice []T, f func(T) bool) (T, bool) {
 	for _, v := range slice {
 		if f(v) {
@@ -132,17 +196,37 @@ func Find[T any](slice []T, f func(T) bool) (T, bool) {
 	return zero, false
 }
 
-// RandomString returns a random string with a given length
+// RandomString returns a random string with a given length.
+//
+// Parameters:
+//   - length: The desired length.
+//
+// Returns:
+//   - A random string.
 func RandomString(length int) string {
 	return RandomStringPrefix("", length)
 }
 
-// RandomStringPrefix returns a random string with a given length, with a prefix
+// RandomStringPrefix returns a random string with a given length, with a prefix.
+//
+// Parameters:
+//   - prefix: The prefix string.
+//   - length: The total length of the result.
+//
+// Returns:
+//   - The prefixed random string.
 func RandomStringPrefix(prefix string, length int) string {
 	return randomStringPrefixWithCharset(prefix, length, randomStringCharset)
 }
 
-// RandomLowerStringPrefix returns a random lowercase-only string with a given length, with a prefix
+// RandomLowerStringPrefix returns a random lowercase-only string with a given length, with a prefix.
+//
+// Parameters:
+//   - prefix: The prefix string.
+//   - length: The total length of the result.
+//
+// Returns:
+//   - The prefixed random lowercase string.
 func RandomLowerStringPrefix(prefix string, length int) string {
 	return randomStringPrefixWithCharset(prefix, length, randomStringLowerCaseCharset)
 }
@@ -157,7 +241,14 @@ func randomStringPrefixWithCharset(prefix string, length int, charset string) st
 	return prefix + string(b)
 }
 
-// ValidRandomString returns true if the given string matches the format created by RandomString
+// ValidRandomString returns true if the given string matches the format created by RandomString.
+//
+// Parameters:
+//   - s: The string to check.
+//   - length: The expected length.
+//
+// Returns:
+//   - True if valid.
 func ValidRandomString(s string, length int) bool {
 	if len(s) != length {
 		return false
@@ -170,7 +261,14 @@ func ValidRandomString(s string, length int) bool {
 	return true
 }
 
-// ParsePriority parses a priority string into its equivalent integer value
+// ParsePriority parses a priority string into its equivalent integer value.
+//
+// Parameters:
+//   - priority: The priority string (e.g. "high", "5").
+//
+// Returns:
+//   - The integer priority value (1-5), or 0 if default/empty.
+//   - An error if invalid.
 func ParsePriority(priority string) (int, error) {
 	p := strings.TrimSpace(strings.ToLower(priority))
 	switch p {
@@ -191,7 +289,14 @@ func ParsePriority(priority string) (int, error) {
 	}
 }
 
-// PriorityString converts a priority number to a string
+// PriorityString converts a priority number to a string.
+//
+// Parameters:
+//   - priority: The priority integer.
+//
+// Returns:
+//   - The string representation.
+//   - An error if invalid.
 func PriorityString(priority int) (string, error) {
 	switch priority {
 	case 0:
@@ -211,13 +316,27 @@ func PriorityString(priority int) (string, error) {
 	}
 }
 
-// ShortTopicURL shortens the topic URL to be human-friendly, removing the http:// or https://
+// ShortTopicURL shortens the topic URL to be human-friendly, removing the http:// or https://.
+//
+// Parameters:
+//   - s: The URL string.
+//
+// Returns:
+//   - The shortened URL.
 func ShortTopicURL(s string) string {
 	return strings.TrimPrefix(strings.TrimPrefix(s, "https://"), "http://")
 }
 
 // DetectContentType probes the byte array b and returns mime type and file extension.
 // The filename is only used to override certain special cases.
+//
+// Parameters:
+//   - b: The data to probe.
+//   - filename: The filename (optional).
+//
+// Returns:
+//   - mimeType: The detected MIME type.
+//   - ext: The file extension.
 func DetectContentType(b []byte, filename string) (mimeType string, ext string) {
 	if strings.HasSuffix(strings.ToLower(filename), ".apk") {
 		return "application/vnd.android.package-archive", ".apk"
@@ -231,6 +350,13 @@ func DetectContentType(b []byte, filename string) (mimeType string, ext string) 
 }
 
 // ParseSize parses a size string like 2K or 2M into bytes. If no unit is found, e.g. 123, bytes is assumed.
+//
+// Parameters:
+//   - s: The size string.
+//
+// Returns:
+//   - The size in bytes.
+//   - An error if invalid.
 func ParseSize(s string) (int64, error) {
 	matches := sizeStrRegex.FindStringSubmatch(s)
 	if matches == nil {
@@ -256,6 +382,12 @@ func ParseSize(s string) (int64, error) {
 
 // FormatSize formats the size in a way that it can be parsed by ParseSize.
 // It does not include decimal places. Uneven sizes are rounded down.
+//
+// Parameters:
+//   - b: The size in bytes.
+//
+// Returns:
+//   - The formatted size string.
 func FormatSize(b int64) string {
 	const unit = 1024
 	if b < unit {
@@ -269,7 +401,13 @@ func FormatSize(b int64) string {
 	return fmt.Sprintf("%d%c", int(math.Floor(float64(b)/float64(div))), "KMGT"[exp])
 }
 
-// FormatSizeHuman formats bytes into a human-readable notation, e.g. 2.1 MB
+// FormatSizeHuman formats bytes into a human-readable notation, e.g. 2.1 MB.
+//
+// Parameters:
+//   - b: The size in bytes.
+//
+// Returns:
+//   - The formatted human-readable string.
 func FormatSizeHuman(b int64) string {
 	const unit = 1024
 	if b < unit {
@@ -285,6 +423,13 @@ func FormatSizeHuman(b int64) string {
 
 // ReadPassword will read a password from STDIN. If the terminal supports it, it will not print the
 // input characters to the screen. If not, it'll just read using normal readline semantics (useful for testing).
+//
+// Parameters:
+//   - in: The input reader.
+//
+// Returns:
+//   - The password as bytes.
+//   - An error if reading fails.
 func ReadPassword(in io.Reader) ([]byte, error) {
 	// If in is a file and a character device (a TTY), use term.ReadPassword
 	if f, ok := in.(*os.File); ok {
@@ -323,18 +468,37 @@ func ReadPassword(in io.Reader) ([]byte, error) {
 	return password, nil
 }
 
-// BasicAuth encodes the Authorization header value for basic auth
+// BasicAuth encodes the Authorization header value for basic auth.
+//
+// Parameters:
+//   - user: The username.
+//   - pass: The password.
+//
+// Returns:
+//   - The Authorization header value.
 func BasicAuth(user, pass string) string {
 	return fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", user, pass))))
 }
 
-// BearerAuth encodes the Authorization header value for a bearer/token auth
+// BearerAuth encodes the Authorization header value for a bearer/token auth.
+//
+// Parameters:
+//   - token: The access token.
+//
+// Returns:
+//   - The Authorization header value.
 func BearerAuth(token string) string {
 	return fmt.Sprintf("Bearer %s", token)
 }
 
 // MaybeMarshalJSON returns a JSON string of the given object, or "<cannot serialize>" if serialization failed.
 // This is useful for logging purposes where a failure doesn't matter that much.
+//
+// Parameters:
+//   - v: The object to marshal.
+//
+// Returns:
+//   - The JSON string.
 func MaybeMarshalJSON(v any) string {
 	jsonBytes, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
@@ -354,6 +518,12 @@ func MaybeMarshalJSON(v any) string {
 // Example:
 //
 //	[]string{"ls", "-al", "Document Folder"} -> ls -al "Document Folder"
+//
+// Parameters:
+//   - command: A slice of command parts.
+//
+// Returns:
+//   - The quoted command string.
 func QuoteCommand(command []string) string {
 	var quoted []string
 	for _, c := range command {
@@ -366,7 +536,14 @@ func QuoteCommand(command []string) string {
 	return strings.Join(quoted, " ")
 }
 
-// UnmarshalJSON reads the given io.ReadCloser into a struct
+// UnmarshalJSON reads the given io.ReadCloser into a struct.
+//
+// Parameters:
+//   - body: The reader containing JSON data.
+//
+// Returns:
+//   - The unmarshaled object.
+//   - An error if unmarshaling fails.
 func UnmarshalJSON[T any](body io.ReadCloser) (*T, error) {
 	var obj T
 	if err := json.NewDecoder(body).Decode(&obj); err != nil {
@@ -375,7 +552,16 @@ func UnmarshalJSON[T any](body io.ReadCloser) (*T, error) {
 	return &obj, nil
 }
 
-// UnmarshalJSONWithLimit reads the given io.ReadCloser into a struct, but only until limit is reached
+// UnmarshalJSONWithLimit reads the given io.ReadCloser into a struct, but only until limit is reached.
+//
+// Parameters:
+//   - r: The reader containing JSON data.
+//   - limit: The maximum number of bytes to read.
+//   - allowEmpty: Whether to return an empty object if the body is empty.
+//
+// Returns:
+//   - The unmarshaled object.
+//   - An error if unmarshaling fails or the limit is exceeded.
 func UnmarshalJSONWithLimit[T any](r io.ReadCloser, limit int, allowEmpty bool) (*T, error) {
 	defer r.Close()
 	p, err := Peek(r, limit)
@@ -395,6 +581,14 @@ func UnmarshalJSONWithLimit[T any](r io.ReadCloser, limit int, allowEmpty bool) 
 
 // Retry executes function f until if succeeds, and then returns t. If f fails, it sleeps
 // and tries again. The sleep durations are passed as the after params.
+//
+// Parameters:
+//   - f: The function to retry.
+//   - after: A variadic list of sleep durations.
+//
+// Returns:
+//   - The result of f.
+//   - An error if f fails after all retries.
 func Retry[T any](f func() (*T, error), after ...time.Duration) (t *T, err error) {
 	for _, delay := range after {
 		if t, err = f(); err == nil {
@@ -406,7 +600,15 @@ func Retry[T any](f func() (*T, error), after ...time.Duration) (t *T, err error
 }
 
 // MinMax returns value if it is between min and max, or either
-// min or max if it is out of range
+// min or max if it is out of range.
+//
+// Parameters:
+//   - value: The value to clamp.
+//   - min: The minimum allowed value.
+//   - max: The maximum allowed value.
+//
+// Returns:
+//   - The clamped value.
 func MinMax[T int | int64](value, min, max T) T {
 	if value < min {
 		return min
@@ -416,7 +618,14 @@ func MinMax[T int | int64](value, min, max T) T {
 	return value
 }
 
-// Max returns the maximum value of the two given values
+// Max returns the maximum value of the two given values.
+//
+// Parameters:
+//   - a: The first value.
+//   - b: The second value.
+//
+// Returns:
+//   - The larger of the two values.
 func Max[T int | int64 | rate.Limit](a, b T) T {
 	if a > b {
 		return a
@@ -424,17 +633,35 @@ func Max[T int | int64 | rate.Limit](a, b T) T {
 	return b
 }
 
-// String turns a string into a pointer of a string
+// String turns a string into a pointer of a string.
+//
+// Parameters:
+//   - v: The string value.
+//
+// Returns:
+//   - A pointer to the string.
 func String(v string) *string {
 	return &v
 }
 
-// Int turns an int into a pointer of an int
+// Int turns an int into a pointer of an int.
+//
+// Parameters:
+//   - v: The int value.
+//
+// Returns:
+//   - A pointer to the int.
 func Int(v int) *int {
 	return &v
 }
 
-// Time turns a time.Time into a pointer
+// Time turns a time.Time into a pointer.
+//
+// Parameters:
+//   - v: The time value.
+//
+// Returns:
+//   - A pointer to the time.
 func Time(v time.Time) *time.Time {
 	return &v
 }

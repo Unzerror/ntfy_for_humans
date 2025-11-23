@@ -99,6 +99,13 @@ Examples:
   ntfy token remove phil tk_th2srHVlxr...       # Delete token`,
 }
 
+// execTokenAdd creates a new access token for a user.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the user does not exist or token creation fails.
 func execTokenAdd(c *cli.Context) error {
 	username := c.Args().Get(0)
 	expiresStr := c.String("expires")
@@ -138,6 +145,13 @@ func execTokenAdd(c *cli.Context) error {
 	return nil
 }
 
+// execTokenDel removes an existing access token for a user.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if the user or token does not exist, or deletion fails.
 func execTokenDel(c *cli.Context) error {
 	username, token := c.Args().Get(0), c.Args().Get(1)
 	if username == "" || token == "" {
@@ -162,6 +176,13 @@ func execTokenDel(c *cli.Context) error {
 	return nil
 }
 
+// execTokenList lists all tokens for a specific user or all users.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - An error if listing tokens fails.
 func execTokenList(c *cli.Context) error {
 	username := c.Args().Get(0)
 	if username == userEveryone || username == user.Everyone {
@@ -221,6 +242,13 @@ func execTokenList(c *cli.Context) error {
 	return nil
 }
 
+// execTokenGenerate generates a new random token and prints it to stdout.
+//
+// Parameters:
+//   - c: The CLI context.
+//
+// Returns:
+//   - nil.
 func execTokenGenerate(c *cli.Context) error {
 	fmt.Fprintln(c.App.Writer, user.GenerateToken())
 	return nil
