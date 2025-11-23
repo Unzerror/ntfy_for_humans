@@ -65,7 +65,7 @@ type Message struct { // TODO combine with server.message
 	Attachment *Attachment
 
 	// Additional fields
-
+	
 	// TopicURL is the full URL of the topic.
 	TopicURL       string
 	// SubscriptionID is the ID of the subscription that received this message.
@@ -87,7 +87,7 @@ type Attachment struct {
 	// URL is the URL to download the attachment.
 	URL     string `json:"url"`
 	// Owner is the IP address of uploader, used for rate limiting.
-	Owner   string `json:"-"`
+	Owner   string `json:"-"` 
 }
 
 type subscription struct {
